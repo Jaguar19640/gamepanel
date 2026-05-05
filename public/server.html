@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GamePanel — Server</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/server.css">
+</head>
+<body>
+<div id="app" style="display:none">
+  <div class="layout">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="logo">
+        <span class="logo-icon">GP</span>
+        <div>
+          <div class="logo-text">GamePanel</div>
+          <div class="logo-sub">v0.1.0</div>
+        </div>
+      </div>
+      <nav>
+        <a class="nav-item" href="/">📊 Dashboard</a>
+        <a class="nav-item" href="/?page=servers">🖥️ Server</a>
+        <a class="nav-item" id="nav-users" style="display:none" href="/?page=users">👥 Benutzer</a>
+      </nav>
+      <div style="margin-top:auto;padding:8px">
+        <div style="font-size:11px;color:#8b949e;margin-bottom:6px" id="sidebar-user"></div>
+        <button class="btn" style="width:100%" onclick="logout()">Ausloggen</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- Header -->
+      <div class="detail-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <h1 class="page-title" id="server-name">Laden...</h1>
+            <span class="status" id="server-status">
+              <span class="status-dot dot-offline"></span>
+              <span id="status-text">Offline</span>
+            </span>
+          </div>
+          <div style="font-size:12px;color:#8b949e;margin-top:4px" id="server-meta"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" id="btn-start" onclick="startServer()">▶ Starten</button>
+          <button class="btn red" id="btn-stop" onclick="stopServer()" style="display:none">■ Stoppen</button>
+          <button class="btn" onclick="restartServer()">↺ Neustart</button>
+        </div>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('overview', this)">📊 Übersicht</div>
+        <div class="tab" onclick="switchTab('console', this)">💻 Console</div>
+        <div class="tab" onclick="switchTab('files', this)">📁 Dateien</div>
+        <div class="tab" onclick="switchTab('backups', this)">💾 Backups</div>
+        <div class="tab" onclick="switchTab('settings', this)">⚙️ Einstellungen</div>
+      </div>
+
+      <!-- Übersicht -->
+      <div id="tab-overview" class="tab-content active">
+        <div class="stats" style="margin-bottom:20px">
+          <div class="stat-card">
+            <div class="stat-label">Spiel</div>
+            <div class="stat-value" style="font-size:16px" id="ov-game">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Version</div>
+            <div class="stat-value" style="font-size:16px" id="ov-version">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Port</div>
+            <div class="stat-value" style="font-size:16px" id="ov-port">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">RAM</div>
+            <div class="stat-value" style="font-size:16px" id="ov-ram">—</div>
+          </div>
+        </div>
+        <div class="info-grid">
+          <div class="info-card">
+            <div class="info-title">Server Details</div>
+            <div class="info-row"><span>Loader</span><span id="ov-loader">—</span></div>
+            <div class="info-row"><span>Max. Spieler</span><span id="ov-maxplayers">—</span></div>
+            <div class="info-row"><span>Installationspfad</span><span id="ov-path" style="font-family:monospace;font-size:11px">—</span></div>
+            <div class="info-row"><span>Erstellt</span><span id="ov-created">—</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Console -->
+      <div id="tab-console" class="tab-content">
+        <div class="console-wrap">
+          <div class="console-out" id="console-out"></div>
+          <div class="console-in">
+            <span style="color:#22c55e;font-family:monospace">$</span>
+            <input class="cmd-input" id="cmd-input"
+              placeholder="Befehl eingeben (z.B. say Hallo, list, stop)..."
+              onkeydown="if(event.key==='Enter') sendCommand()">
+            <button class="btn primary" onclick="sendCommand()">Senden</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dateien -->
+      <div id="tab-files" class="tab-content">
+        <div class="files-wrap">
+          <!-- Toolbar -->
+          <div class="files-toolbar">
+            <span id="current-path" style="font-family:monospace;font-size:12px;color:#8b949e">/</span>
+            <div style="margin-left:auto;display:flex;gap:6px">
+              <button class="btn" onclick="goUpDir()">↑ Hoch</button>
+              <button class="btn primary" onclick="newFilePrompt()">+ Datei</button>
+              <button class="btn" onclick="newFolderPrompt()">+ Ordner</button>
+            </div>
+          </div>
+          <!-- Dateiliste + Editor -->
+          <div class="files-body">
+            <div class="file-tree" id="file-tree"></div>
+            <div class="file-editor" id="file-editor">
+              <div class="editor-placeholder">
+                <div style="font-size:32px;margin-bottom:8px">📄</div>
+                <div>Datei auswählen um sie zu bearbeiten</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Backups -->
+      <div id="tab-backups" class="tab-content">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn primary" onclick="createBackup()">💾 Backup erstellen</button>
+        </div>
+        <div id="backup-list"></div>
+      </div>
+
+      <!-- Einstellungen -->
+      <div id="tab-settings" class="tab-content">
+        <div class="settings-wrap">
+          <div class="info-card">
+            <div class="info-title">Server Einstellungen</div>
+            <div class="form-field">
+              <label class="form-label">Server-Name</label>
+              <input class="form-input" id="set-name">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div class="form-field">
+                <label class="form-label">Port</label>
+                <input class="form-input" id="set-port" type="number">
+              </div>
+              <div class="form-field">
+                <label class="form-label">Max. Spieler</label>
+                <input class="form-input" id="set-maxplayers" type="number">
+              </div>
+              <div class="form-field">
+                <label class="form-label">RAM (GB)</label>
+                <input class="form-input" id="set-ram" type="number">
+              </div>
+            </div>
+            <div style="margin-top:12px;display:flex;gap:8px">
+              <button class="btn primary" onclick="saveSettings()">Speichern</button>
+            </div>
+          </div>
+          <div class="info-card" style="margin-top:12px;border-color:#dc2626">
+            <div class="info-title" style="color:#ef4444">Gefahrenzone</div>
+            <p style="font-size:12px;color:#8b949e;margin-bottom:12px">
+              Diese Aktionen können nicht rückgängig gemacht werden.
+            </p>
+            <button class="btn red" onclick="deleteServer()">🗑️ Server löschen</button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="/js/server.js"></script>
+</body>
+</html>

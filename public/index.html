@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GamePanel</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Login Screen -->
+  <div id="login-screen">
+    <div class="login-box">
+      <div class="login-logo">
+        <span class="logo-icon">GP</span>
+        <div>
+          <div class="logo-text">GamePanel</div>
+          <div class="logo-sub">Bitte einloggen</div>
+        </div>
+      </div>
+      <div id="login-error" class="error-msg" style="display:none"></div>
+      <div class="form-field">
+        <label class="form-label">Benutzername</label>
+        <input class="form-input" id="login-username" placeholder="admin" onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Passwort</label>
+        <input class="form-input" id="login-password" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')login()">
+      </div>
+      <button class="btn primary" style="width:100%" onclick="login()">Einloggen</button>
+    </div>
+  </div>
+
+  <!-- Temp Admin Warning -->
+  <div id="setup-screen" style="display:none">
+    <div class="login-box">
+      <div class="login-logo">
+        <span class="logo-icon" style="background:#d97706">⚠</span>
+        <div>
+          <div class="logo-text">Ersteinrichtung</div>
+          <div class="logo-sub">Admin-Account erstellen</div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#8b949e;margin-bottom:16px;line-height:1.6">
+        Du bist mit dem temporären Admin-Account eingeloggt. Bitte erstelle jetzt deinen persönlichen Admin-Account. Der temporäre Account wird danach automatisch gelöscht.
+      </p>
+      <div id="setup-error" class="error-msg" style="display:none"></div>
+      <div class="form-field">
+        <label class="form-label">Benutzername</label>
+        <input class="form-input" id="setup-username" placeholder="mein-admin">
+      </div>
+      <div class="form-field">
+        <label class="form-label">E-Mail (optional)</label>
+        <input class="form-input" id="setup-email" placeholder="admin@example.com">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Passwort</label>
+        <input class="form-input" id="setup-password" type="password" placeholder="••••••••">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Passwort wiederholen</label>
+        <input class="form-input" id="setup-password2" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn primary" style="width:100%" onclick="setupAdmin()">Account erstellen & einloggen</button>
+    </div>
+  </div>
+
+  <!-- Hauptanwendung -->
+  <div id="app" style="display:none">
+    <div class="layout">
+
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <span class="logo-icon">GP</span>
+          <div>
+            <div class="logo-text">GamePanel</div>
+            <div class="logo-sub">v0.1.0</div>
+          </div>
+        </div>
+        <nav>
+          <a class="nav-item active" onclick="showPage('dashboard', this)">📊 Dashboard</a>
+          <a class="nav-item" onclick="showPage('servers', this)">🖥️ Server</a>
+          <a class="nav-item" id="nav-users" style="display:none" onclick="showPage('users', this)">👥 Benutzer</a>
+        </nav>
+        <div style="margin-top:auto;padding:8px">
+          <div style="font-size:11px;color:#8b949e;margin-bottom:6px" id="sidebar-user"></div>
+          <button class="btn" style="width:100%" onclick="logout()">Ausloggen</button>
+        </div>
+      </aside>
+
+      <!-- Main -->
+      <main class="main">
+
+        <!-- Dashboard -->
+        <div id="page-dashboard" class="page active">
+          <h1 class="page-title">Dashboard</h1>
+          <div class="stats" id="stats"></div>
+          <h2 class="section-title">Server Übersicht</h2>
+          <div id="server-list"></div>
+        </div>
+
+        <!-- Server -->
+        <div id="page-servers" class="page">
+          <div class="page-header">
+            <h1 class="page-title">Server</h1>
+            <button class="btn primary" onclick="openModal()">+ Neuer Server</button>
+          </div>
+          <div id="server-list-2"></div>
+        </div>
+
+        <!-- Benutzer -->
+        <div id="page-users" class="page">
+          <div class="page-header">
+            <h1 class="page-title">Benutzer</h1>
+            <button class="btn primary" onclick="openUserModal()">+ Neuer Benutzer</button>
+          </div>
+          <div id="user-list"></div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Server erstellen Modal -->
+  <div id="modal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Neuen Server erstellen</h2>
+      <div class="form-field">
+        <label class="form-label">Spiel</label>
+        <select class="form-input" id="new-game" onchange="onGameChange()">
+          <option value="Minecraft">⬛ Minecraft</option>
+          <option value="Satisfactory">🏭 Satisfactory</option>
+          <option value="CS2">🎯 Counter-Strike 2</option>
+          <option value="Valheim">⚔️ Valheim</option>
+          <option value="ARK">🦕 ARK</option>
+        </select>
+      </div>
+      <div id="mc-options">
+        <div class="form-field">
+          <label class="form-label">Loader</label>
+          <select class="form-input" id="new-loader">
+            <option value="vanilla">Vanilla</option>
+            <option value="paper">Paper (empfohlen)</option>
+            <option value="spigot">Spigot</option>
+            <option value="fabric">Fabric</option>
+            <option value="forge">Forge</option>
+            <option value="neoforge">NeoForge</option>
+            <option value="purpur">Purpur</option>
+            <option value="quilt">Quilt</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Minecraft Version</label>
+          <select class="form-input" id="new-version">
+            <option>1.21.1</option>
+            <option>1.21</option>
+            <option>1.20.6</option>
+            <option>1.20.4</option>
+            <option>1.20.1</option>
+            <option>1.19.4</option>
+            <option>1.19.2</option>
+            <option>1.18.2</option>
+            <option>1.17.1</option>
+            <option>1.16.5</option>
+            <option>1.12.2</option>
+            <option>1.8.9</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Server-Name</label>
+        <input class="form-input" id="new-name" placeholder="Mein Server">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="form-field">
+          <label class="form-label">Port</label>
+          <input class="form-input" id="new-port" type="number" value="25565">
+        </div>
+        <div class="form-field">
+          <label class="form-label">Max. Spieler</label>
+          <input class="form-input" id="new-maxplayers" type="number" value="20">
+        </div>
+        <div class="form-field">
+          <label class="form-label">RAM (GB)</label>
+          <input class="form-input" id="new-ram" type="number" value="4">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Abbrechen</button>
+        <button class="btn primary" onclick="createServer()">Erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Benutzer erstellen Modal -->
+  <div id="user-modal" class="modal-bg" style="display:none">
+    <div class="modal">
+      <h2 class="modal-title">Neuen Benutzer erstellen</h2>
+      <div class="form-field">
+        <label class="form-label">Benutzername</label>
+        <input class="form-input" id="new-user-name" placeholder="benutzername">
+      </div>
+      <div class="form-field">
+        <label class="form-label">E-Mail (optional)</label>
+        <input class="form-input" id="new-user-email" placeholder="user@example.com">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Passwort</label>
+        <input class="form-input" id="new-user-password" type="password">
+      </div>
+      <div class="form-field">
+        <label class="form-label">Rolle</label>
+        <select class="form-input" id="new-user-role">
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeUserModal()">Abbrechen</button>
+        <button class="btn primary" onclick="createUser()">Erstellen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
