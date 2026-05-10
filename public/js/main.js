@@ -99,6 +99,12 @@ function initApp() {
 
 // ─── NAVIGATION ─────────────────────────────────────
 function showPage(name, el) {
+  // System-Interval stoppen wenn Dashboard verlassen wird
+  if (name !== 'dashboard' && systemInterval) {
+    clearInterval(systemInterval);
+    systemInterval = null;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
@@ -110,39 +116,182 @@ function showPage(name, el) {
 
 // ─── API HELPER ──────────────────────────────────────
 async function api(path, options = {}) {
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + token,
-      ...options.headers
-    }
-  });
-  if (res.status === 401) { logout(); return null; }
-  return res.json();
+  try {
+    const res = await fetch(path, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        ...options.headers
+      }
+    });
+    if (res.status === 401) { logout(); return null; }
+    const text = await res.text();
+    if (!text) return null;
+    return JSON.parse(text);
+  } catch (e) {
+    console.error('API Fehler:', path, e.message);
+    return null;
+  }
 }
 
 // ─── DASHBOARD ───────────────────────────────────────
+let systemInterval = null;
+
 async function loadDashboard() {
   const servers = await api('/api/servers');
   if (!servers) return;
 
   const online = servers.filter(s => s.status === 'online').length;
-  document.getElementById('stats').innerHTML = `
-    <div class="stat-card">
-      <div class="stat-label">Server gesamt</div>
-      <div class="stat-value">${servers.length}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Online</div>
-      <div class="stat-value" style="color:#22c55e">${online}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Offline</div>
-      <div class="stat-value" style="color:#ef4444">${servers.length - online}</div>
-    </div>
-  `;
   renderServerList('server-list', servers);
+
+  // System Stats starten
+  if (systemInterval) clearInterval(systemInterval);
+  loadSystemStats();
+  systemInterval = setInterval(loadSystemStats, 3000);
+}
+
+async function loadSystemStats() {
+  const stats = await api('/api/system/stats');
+  if (!stats) return;
+
+ // CPU
+const cpuColor = stats.cpu.load > 80 ? '#ef4444' : stats.cpu.load > 60 ? '#f59e0b' : '#22c55e';
+document.getElementById('cpu-load').textContent = stats.cpu.load + '%';
+document.getElementById('cpu-bar').style.width = stats.cpu.load + '%';
+document.getElementById('cpu-bar').style.background = cpuColor;
+
+if (stats.cpu.temp) {
+  document.getElementById('cpu-temp').textContent = `🌡️ ${stats.cpu.temp}°C`;
+} else {
+  document.getElementById('cpu-temp').textContent = '🌡️ N/A';
+  
+}
+const modelEl = document.getElementById('cpu-model');
+if (modelEl && stats.cpu.model) {
+  modelEl.textContent = `${stats.cpu.model} · ${stats.cpu.physicalCores}C/${stats.cpu.logicalCores}T · ${stats.cpu.sockets} Socket(s)`;
+}
+
+// CPU Kerne — gruppiert bei vielen Kernen
+const coresEl = document.getElementById('cpu-cores');
+const cores = stats.cpu.cores;
+if (cores.length > 0) {
+  // Durchschnitt berechnen
+  const avg = Math.round(cores.reduce((a, c) => a + c.load, 0) / cores.length * 10) / 10;
+
+  // Bei mehr als 8 Kernen: kompaktere Ansicht
+  if (cores.length > 8) {
+    coresEl.style.gridTemplateColumns = 'repeat(auto-fill,minmax(60px,1fr))';
+    coresEl.innerHTML = cores.map(c => {
+      const col = c.load > 80 ? '#ef4444' : c.load > 60 ? '#f59e0b' : '#22c55e';
+      return `
+        <div style="background:#0d1117;border-radius:5px;padding:4px 6px;text-align:center">
+          <div style="font-size:9px;color:#6e7681">C${c.core}</div>
+          <div style="font-size:11px;font-family:monospace;color:${col}">${c.load}%</div>
+          <div style="height:3px;background:#21262d;border-radius:2px;margin-top:2px;overflow:hidden">
+            <div style="height:100%;background:${col};width:${c.load}%;transition:width .5s"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    coresEl.style.gridTemplateColumns = 'repeat(auto-fill,minmax(80px,1fr))';
+    coresEl.innerHTML = cores.map(c => {
+      const col = c.load > 80 ? '#ef4444' : c.load > 60 ? '#f59e0b' : '#22c55e';
+      return `
+        <div style="background:#0d1117;border-radius:5px;padding:5px 7px">
+          <div style="font-size:9px;color:#6e7681;margin-bottom:3px">Core ${c.core}</div>
+          <div style="font-size:12px;font-family:monospace;color:${col}">${c.load}%</div>
+          <div style="height:3px;background:#21262d;border-radius:2px;margin-top:3px;overflow:hidden">
+            <div style="height:100%;background:${col};width:${c.load}%;transition:width .5s"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+  // RAM
+  const ramColor = stats.ram.percent > 80 ? '#ef4444' : stats.ram.percent > 60 ? '#f59e0b' : '#60a5fa';
+  document.getElementById('ram-load').textContent = stats.ram.percent + '%';
+  document.getElementById('ram-bar').style.width = stats.ram.percent + '%';
+  document.getElementById('ram-bar').style.background = ramColor;
+  document.getElementById('ram-detail').textContent =
+    `${stats.ram.used} GB verwendet / ${stats.ram.total} GB gesamt`;
+
+  // GPU
+  if (stats.gpus && stats.gpus.length > 0) {
+    const gpuSection = document.getElementById('gpu-section');
+    gpuSection.style.display = 'block';
+    document.getElementById('gpu-cards').innerHTML = stats.gpus.map(g => {
+      const load = g.load || 0;
+      const temp = g.temp || null;
+      const gpuColor = load > 80 ? '#ef4444' : load > 60 ? '#f59e0b' : '#a78bfa';
+      return `
+        <div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:14px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:500;color:#f0f6fc">${g.model || 'GPU'}</div>
+            ${temp ? `<div style="font-size:11px;color:#8b949e">🌡️ ${temp}°C</div>` : ''}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:10px;color:#6e7681;margin-bottom:3px">Auslastung</div>
+              <div style="font-size:14px;font-family:monospace;color:${gpuColor}">${load}%</div>
+              <div style="height:4px;background:#21262d;border-radius:2px;margin-top:4px;overflow:hidden">
+                <div style="height:100%;background:${gpuColor};width:${load}%;transition:width .5s"></div>
+              </div>
+            </div>
+            <div>
+              <div style="font-size:10px;color:#6e7681;margin-bottom:3px">VRAM</div>
+              <div style="font-size:14px;font-family:monospace;color:#f0f6fc">${g.vram || '—'} MB</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Server Ressourcen
+  const resEl = document.getElementById('server-resources');
+  if (stats.servers && stats.servers.length > 0) {
+    resEl.innerHTML = stats.servers.map(s => {
+      const cpuCol = s.cpu > 80 ? '#ef4444' : s.cpu > 60 ? '#f59e0b' : '#22c55e';
+      const ramCol = '#60a5fa';
+      return `
+        <div style="background:#161b22;border:1px solid #21262d;border-radius:8px;padding:12px 16px;margin-bottom:8px;display:flex;align-items:center;gap:16px">
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500;color:#f0f6fc">${s.name}</div>
+            <div style="font-size:11px;color:#8b949e">${s.game} · PID ${s.pid} · Uptime ${formatUptime(s.uptime)}</div>
+          </div>
+          <div style="display:flex;gap:20px">
+            <div style="text-align:center">
+              <div style="font-size:10px;color:#6e7681;margin-bottom:2px">CPU</div>
+              <div style="font-size:14px;font-family:monospace;color:${cpuCol}">${s.cpu}%</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:10px;color:#6e7681;margin-bottom:2px">RAM</div>
+              <div style="font-size:14px;font-family:monospace;color:${ramCol}">${s.ram} MB</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    resEl.innerHTML = '<p style="color:#6e7681;font-size:12px">Keine Server online</p>';
+  }
+
+  document.getElementById('last-update').textContent =
+    'Aktualisiert: ' + new Date().toLocaleTimeString('de-DE');
+}
+
+function formatUptime(seconds) {
+  if (!seconds) return '—';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
 }
 
 // ─── SERVER ──────────────────────────────────────────
@@ -188,11 +337,17 @@ async function toggleServer(id, action) {
 }
 
 async function deleteServer(id) {
-  if (!confirm('Server wirklich löschen?')) return;
-  await api(`/api/servers/${id}`, { method: 'DELETE' });
+  if (!confirm('Server wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden!')) return;
+
+  const res = await api(`/api/servers/${id}?deleteFiles=true`, { 
+    method: 'DELETE' 
+  });
+  
+  if (res?.error) return alert(res.error);
   loadDashboard();
   loadServers();
 }
+
 
 // ─── SERVER MODAL ────────────────────────────────────
 const defaultPorts = {
@@ -201,13 +356,46 @@ const defaultPorts = {
 };
 
 function onGameChange() {
-  const game = document.getElementById('new-game').value;
-  document.getElementById('mc-options').style.display = game === 'Minecraft' ? 'block' : 'none';
-  document.getElementById('new-port').value = defaultPorts[game] || 25565;
+  const gameEl = document.getElementById('new-game');
+  if (!gameEl) return;
+  const game = gameEl.value;
+  const mcOptions = document.getElementById('mc-options');
+  if (mcOptions) mcOptions.style.display = game === 'Minecraft' ? 'block' : 'none';
+  const portEl = document.getElementById('new-port');
+  if (portEl) portEl.value = defaultPorts[game] || 25565;
+  if (game === 'Minecraft') loadMinecraftVersions();
 }
+
+async function loadMinecraftVersions() {
+  const loaderEl = document.getElementById('new-loader');
+  const select = document.getElementById('new-version');
+  const betaEl = document.getElementById('mc-show-beta');
+  if (!loaderEl || !select) return;
+
+  const loader = loaderEl.value;
+  const includeBeta = betaEl?.checked || false;
+  select.innerHTML = '<option>Lädt...</option>';
+
+  try {
+    const versions = await api(`/api/versions/${loader}?beta=${includeBeta}`);
+    if (!versions) return;
+
+    let list = Array.isArray(versions) ? versions : [];
+    select.innerHTML = list.slice(0, 80).map(v =>
+      `<option value="${v}">${v}</option>`
+    ).join('');
+  } catch(e) {
+    select.innerHTML = '<option>Fehler beim Laden</option>';
+  }
+}
+
 
 function openModal() {
   document.getElementById('modal').style.display = 'flex';
+  // Kurz warten bis das Modal im DOM ist
+  setTimeout(() => {
+    onGameChange();
+  }, 50);
 }
 
 function closeModal() {
@@ -225,11 +413,17 @@ async function createServer() {
 
   if (!name) return alert('Bitte einen Namen eingeben!');
 
-  await api('/api/servers', {
+  const res = await api('/api/servers', {
     method: 'POST',
-    body: JSON.stringify({ name, game, version, loader, port: parseInt(port), max_players: parseInt(max_players), ram: parseInt(ram) })
+    body: JSON.stringify({
+      name, game, version, loader,
+      port: parseInt(port),
+      max_players: parseInt(max_players),
+      ram: parseInt(ram)
+    })
   });
 
+  if (res?.error) return alert(res.error);
   closeModal();
   loadDashboard();
   loadServers();
@@ -290,14 +484,15 @@ async function toggleUserPerms(userId) {
   });
 
   const permKeys = [
-    { key: 'can_start', label: 'Starten' },
-    { key: 'can_stop', label: 'Stoppen' },
-    { key: 'can_console', label: 'Console' },
-    { key: 'can_files', label: 'Dateien' },
-    { key: 'can_backups', label: 'Backups' },
-    { key: 'can_settings', label: 'Einstellungen' },
-    { key: 'can_delete', label: 'Löschen' },
-  ];
+  { key: 'can_view', label: '👁️ Sichtbar' },
+  { key: 'can_start', label: '▶ Starten' },
+  { key: 'can_stop', label: '■ Stoppen' },
+  { key: 'can_console', label: '💻 Console' },
+  { key: 'can_files', label: '📁 Dateien' },
+  { key: 'can_backups', label: '💾 Backups' },
+  { key: 'can_settings', label: '⚙️ Einstellungen' },
+  { key: 'can_delete', label: '🗑️ Löschen' },
+];
 
   el.innerHTML = `
     <div style="border-top:1px solid #21262d;padding-top:10px">
@@ -329,7 +524,7 @@ async function toggleUserPerms(userId) {
 }
 
 async function savePerm(userId, serverId) {
-  const permKeys = ['can_start','can_stop','can_console','can_files','can_backups','can_settings','can_delete'];
+  const permKeys = ['can_view','can_start','can_stop','can_console','can_files','can_backups','can_settings','can_delete'];
   const body = {};
   permKeys.forEach(k => {
     const el = document.getElementById(`perm-${userId}-${serverId}-${k}`);

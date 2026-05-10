@@ -15,6 +15,8 @@ app.use('/api/auth', require('./routes/auth'));
 const serverRoutes = require('./routes/servers');
 app.use('/api/servers', serverRoutes);
 app.use('/api/permissions', require('./routes/permissions'));
+app.use('/api/versions', require('./routes/versions'));
+app.use('/api/system', require('./routes/system'));
 
 app.setIo = (io) => { serverRoutes.setIo(io); };
 

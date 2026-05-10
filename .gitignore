@@ -1,0 +1,8 @@
+node_modules/
+gamepanel.db
+.env
+servers/
+backups/
+tmp/
+*.log
+installer-debug.log

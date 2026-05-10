@@ -27,6 +27,8 @@ db.exec(`
     status TEXT DEFAULT 'offline',
     path TEXT,
     created_by INTEGER,
+    backup_path TEXT,
+    backup_drive TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (created_by) REFERENCES users(id)
   );
@@ -34,6 +36,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS user_server_permissions (
     user_id INTEGER,
     server_id INTEGER,
+    can_view INTEGER DEFAULT 0,
     can_start INTEGER DEFAULT 0,
     can_stop INTEGER DEFAULT 0,
     can_console INTEGER DEFAULT 0,
@@ -58,8 +61,10 @@ db.exec(`
 `);
 
 function initAdmin() {
-  const existing = db.prepare('SELECT * FROM users WHERE username = ?').get('admin');
-  if (!existing) {
+  const anyUser = db.prepare('SELECT * FROM users WHERE is_temp = 0').get();
+  if (!anyUser) {
+    // Alten temp Admin löschen falls vorhanden
+    db.prepare('DELETE FROM users WHERE is_temp = 1').run();
     const hashed = bcrypt.hashSync('admin', 10);
     db.prepare(`
       INSERT INTO users (username, password, role, is_temp)

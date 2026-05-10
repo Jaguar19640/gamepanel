@@ -25,6 +25,32 @@ function logout() {
   window.location.href = '/';
 }
 
+function setupInstallSocket() {
+  socket.on(`install-${serverId}`, (data) => {
+    const bar = document.getElementById('install-progress');
+    const msg = document.getElementById('install-message');
+    const wrap = document.getElementById('install-wrap');
+
+    if (wrap) wrap.style.display = 'block';
+    if (msg) msg.textContent = data.message;
+    if (bar) bar.style.width = data.percent + '%';
+  });
+
+  socket.on(`install-done-${serverId}`, (data) => {
+    setTimeout(() => {
+      const wrap = document.getElementById('install-wrap');
+      if (wrap) wrap.style.display = 'none';
+      loadServer();
+    }, 2000);
+  });
+}
+
+async function startInstall() {
+  if (!confirm('Server jetzt installieren/herunterladen?')) return;
+  const res = await api(`/api/servers/${serverId}/install`, { method: 'POST' });
+  if (res?.error) return alert(res.error);
+}
+
 async function init() {
   if (!token) { window.location.href = '/'; return; }
   const user = await api('/api/auth/me');
@@ -37,6 +63,7 @@ async function init() {
 
   document.getElementById('app').style.display = 'block';
   await loadServer();
+  setupInstallSocket();
   setupSocket();
 }
 
@@ -54,11 +81,22 @@ async function loadServer() {
   document.getElementById('ov-version').textContent = server.version || '—';
   document.getElementById('ov-port').textContent = server.port;
   document.getElementById('ov-ram').textContent = server.ram + ' GB';
+  document.getElementById('set-backup-path').value = server.backup_path || '';
+loadDrivesForSettings();
   document.getElementById('ov-loader').textContent = server.loader || '—';
   document.getElementById('ov-maxplayers').textContent = server.max_players;
   document.getElementById('ov-path').textContent = server.path;
   document.getElementById('ov-created').textContent =
     new Date(server.created_at).toLocaleDateString('de-DE');
+
+    // Server-Info aktualisieren wenn online
+if (server.status === 'online') {
+  const info = await api(`/api/servers/${serverId}/info`);
+  if (info && !info.error) {
+    document.getElementById('ov-pid') && (document.getElementById('ov-pid').textContent = info.pid || '—');
+    document.getElementById('ov-uptime') && (document.getElementById('ov-uptime').textContent = formatUptime(info.uptime) || '—');
+  }
+}
 
   document.getElementById('set-name').value = server.name;
   document.getElementById('set-port').value = server.port;
@@ -108,16 +146,26 @@ async function restartServer() {
 }
 
 // ─── CONSOLE ─────────────────────────────────────────
-function appendLog(type, message) {
+function appendLog(type, message, time) {
   const out = document.getElementById('console-out');
-  const time = new Date().toLocaleTimeString();
+  if (!out) return;
+  const timestamp = time || new Date().toLocaleTimeString('de-DE', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit'
+  });
   const div = document.createElement('div');
   div.className = 'log-line';
-  div.innerHTML = `<span class="log-time">${time}</span><span class="log-${type}">${message}</span>`;
+  div.innerHTML = `<span class="log-time">${timestamp}</span><span class="log-${type}">${escapeHtml(message)}</span>`;
   out.appendChild(div);
-  out.scrollTop = out.scrollHeight;
-}
 
+  updateLogCount();
+
+  // Auto-scroll nur wenn Checkbox aktiv und ganz unten
+  const autoScroll = document.getElementById('autoscroll')?.checked !== false;
+  if (autoScroll) {
+    const isAtBottom = out.scrollHeight - out.clientHeight <= out.scrollTop + 50;
+    if (isAtBottom) out.scrollTop = out.scrollHeight;
+  }
+}
 async function sendCommand() {
   const input = document.getElementById('cmd-input');
   const command = input.value.trim();
@@ -135,7 +183,7 @@ async function sendCommand() {
 
 function setupSocket() {
   socket.on(`server-log-${serverId}`, (data) => {
-    appendLog(data.type, data.message);
+    appendLog(data.type, data.message, data.time);
   });
 
   socket.on(`server-status-${serverId}`, (data) => {
@@ -152,66 +200,168 @@ async function loadFiles(dirPath = '') {
   if (!items) return;
 
   const tree = document.getElementById('file-tree');
-  tree.innerHTML = '';
 
-  // Sortieren: Ordner zuerst
+  // Sortieren: Ordner zuerst, dann alphabetisch
   items.sort((a, b) => b.isDir - a.isDir || a.name.localeCompare(b.name));
 
-  items.forEach(item => {
-    const div = document.createElement('div');
-    div.className = 'file-item';
+  tree.innerHTML = items.map(item => {
     const icon = item.isDir ? '📁' : getFileIcon(item.name);
     const size = item.isDir ? '' : formatSize(item.size);
-    div.innerHTML = `
-      <span>${icon}</span>
-      <span style="flex:1">${item.name}</span>
-      <span style="font-size:10px;color:#6e7681">${size}</span>
+    const itemPath = dirPath ? dirPath + '/' + item.name : item.name;
+    return `
+      <div class="file-item" 
+        onclick="${item.isDir ? `loadFiles('${itemPath}')` : `openFile('${itemPath}', '${item.name}')`}"
+        oncontextmenu="showFileCtx(event, '${itemPath}', '${item.name}', ${item.isDir})">
+        <span>${icon}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${item.name}</span>
+        <span style="font-size:10px;color:#6e7681;flex-shrink:0">${size}</span>
+      </div>
     `;
-
-    if (item.isDir) {
-      div.onclick = () => loadFiles(dirPath ? dirPath + '/' + item.name : item.name);
-    } else {
-      div.onclick = () => openFile(dirPath ? dirPath + '/' + item.name : item.name, item.name);
-    }
-
-    div.oncontextmenu = (e) => {
-      e.preventDefault();
-      if (confirm(`"${item.name}" löschen?`)) {
-        deleteFile(dirPath ? dirPath + '/' + item.name : item.name);
-      }
-    };
-
-    tree.appendChild(div);
-  });
+  }).join('');
 }
 
 async function openFile(filePath, fileName) {
+  // Binäre Dateien nicht öffnen
+  const binaryExts = ['jar','zip','gz','mca','dat','png','jpg','jpeg','gif','mp3','mp4','ico'];
+  const ext = fileName.split('.').pop().toLowerCase();
+
+  if (binaryExts.includes(ext)) {
+    if (confirm(`"${fileName}" ist eine Binärdatei und kann nicht bearbeitet werden.\nMöchtest du sie herunterladen?`)) {
+      downloadFile(filePath);
+    }
+    return;
+  }
+
   document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
   event.currentTarget.classList.add('selected');
+  currentFile = filePath;
 
   const data = await api(`/api/servers/${serverId}/files/read?path=${encodeURIComponent(filePath)}`);
   if (!data) return;
 
-  currentFile = filePath;
   const editor = document.getElementById('file-editor');
   editor.innerHTML = `
     <div class="editor-topbar">
-      <span style="font-family:monospace">${fileName}</span>
-      <div style="display:flex;gap:6px">
+      <span style="font-family:monospace;color:#f0f6fc">${fileName}</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span style="font-size:10px;color:#6e7681" id="editor-status">Gespeichert</span>
+        <button class="btn" onclick="downloadFile('${filePath}')">⬇ Download</button>
         <button class="btn primary" onclick="saveFile()">💾 Speichern</button>
       </div>
     </div>
-    <textarea class="editor-textarea" id="editor-textarea">${escapeHtml(data.content)}</textarea>
+    <div style="display:flex;flex:1;overflow:hidden">
+      <div id="line-nums" style="padding:12px 8px;font-family:monospace;font-size:12.5px;line-height:1.7;color:#6e7681;text-align:right;border-right:1px solid #21262d;background:#0d1117;user-select:none;min-width:40px;overflow:hidden"></div>
+      <textarea class="editor-textarea" id="editor-textarea" 
+        oninput="onEditorChange()"
+        onscroll="syncLineNums()"
+        spellcheck="false">${escapeHtml(data.content)}</textarea>
+    </div>
   `;
+  updateLineNums();
+}
+
+function onEditorChange() {
+  updateLineNums();
+  const status = document.getElementById('editor-status');
+  if (status) status.textContent = 'Ungespeichert ●';
+}
+
+function updateLineNums() {
+  const ta = document.getElementById('editor-textarea');
+  const nums = document.getElementById('line-nums');
+  if (!ta || !nums) return;
+  const lines = ta.value.split('\n').length;
+  nums.innerHTML = Array.from({ length: lines }, (_, i) => i + 1).join('<br>');
+}
+
+function syncLineNums() {
+  const ta = document.getElementById('editor-textarea');
+  const nums = document.getElementById('line-nums');
+  if (ta && nums) nums.scrollTop = ta.scrollTop;
 }
 
 async function saveFile() {
-  const content = document.getElementById('editor-textarea').value;
+  const content = document.getElementById('editor-textarea')?.value;
+  if (!content === undefined || !currentFile) return;
+
   const res = await api(`/api/servers/${serverId}/files/write`, {
     method: 'POST',
     body: JSON.stringify({ path: currentFile, content })
   });
-  if (res?.success) alert('Gespeichert!');
+
+  const status = document.getElementById('editor-status');
+  if (res?.success) {
+    if (status) status.textContent = 'Gespeichert ✓';
+    setTimeout(() => { if (status) status.textContent = 'Gespeichert'; }, 2000);
+  } else {
+    if (status) status.textContent = 'Fehler beim Speichern!';
+  }
+}
+
+function downloadFile(filePath) {
+  const url = `/api/servers/${serverId}/files/download?path=${encodeURIComponent(filePath)}&token=${token}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filePath.split('/').pop();
+  a.click();
+}
+
+function showFileCtx(e, filePath, fileName, isDir) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  // Altes Menü entfernen
+  document.getElementById('file-ctx-menu')?.remove();
+
+  const menu = document.createElement('div');
+  menu.id = 'file-ctx-menu';
+  menu.style.cssText = `
+    position:fixed;top:${e.clientY}px;left:${e.clientX}px;
+    background:#161b22;border:1px solid #21262d;border-radius:8px;
+    padding:4px 0;z-index:1000;min-width:160px;
+  `;
+
+  const items = [
+    !isDir ? `<div class="ctx-item" onclick="openFileFromCtx('${filePath}','${fileName}')">📄 Öffnen</div>` : '',
+    !isDir ? `<div class="ctx-item" onclick="downloadFile('${filePath}')">⬇ Herunterladen</div>` : '',
+    isDir  ? `<div class="ctx-item" onclick="downloadFolder('${filePath}')">⬇ Als ZIP laden</div>` : '',
+    `<div class="ctx-item" onclick="renameItem('${filePath}','${fileName}')">✎ Umbenennen</div>`,
+    `<div style="height:1px;background:#21262d;margin:3px 0"></div>`,
+    `<div class="ctx-item" style="color:#ef4444" onclick="deleteFile('${filePath}')">🗑 Löschen</div>`,
+  ].join('');
+
+  menu.innerHTML = items;
+  document.body.appendChild(menu);
+
+  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+}
+
+function openFileFromCtx(filePath, fileName) {
+  document.getElementById('file-ctx-menu')?.remove();
+  openFile(filePath, fileName);
+}
+
+function downloadFolder(folderPath) {
+  const url = `/api/servers/${serverId}/files/download-folder?path=${encodeURIComponent(folderPath)}&token=${token}`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.click();
+}
+
+async function renameItem(oldPath, oldName) {
+  const newName = prompt('Neuer Name:', oldName);
+  if (!newName || newName === oldName) return;
+
+  const dir = oldPath.includes('/') ? oldPath.substring(0, oldPath.lastIndexOf('/')) : '';
+  const newPath = dir ? dir + '/' + newName : newName;
+
+  const res = await api(`/api/servers/${serverId}/files/rename`, {
+    method: 'POST',
+    body: JSON.stringify({ oldPath, newPath })
+  });
+
+  if (res?.success) loadFiles(currentFilePath);
+  else alert('Fehler beim Umbenennen');
 }
 
 async function deleteFile(filePath) {
@@ -245,6 +395,38 @@ function newFolderPrompt() {
     method: 'POST',
     body: JSON.stringify({ path: folderPath, content: '' })
   }).then(() => loadFiles(currentFilePath));
+}
+
+async function uploadFiles() {
+  const input = document.getElementById('file-upload');
+  const files = input.files;
+  if (!files.length) return;
+
+  const formData = new FormData();
+  for (const file of files) formData.append('files', file);
+  formData.append('path', currentFilePath);
+
+  // Upload-Anzeige
+  const toolbar = document.querySelector('.files-toolbar');
+  const progress = document.createElement('div');
+  progress.style.cssText = 'font-size:12px;color:#22c55e;margin-left:8px';
+  progress.textContent = `⏳ Lade ${files.length} Datei(en) hoch...`;
+  toolbar.appendChild(progress);
+
+  const res = await fetch(`/api/servers/${serverId}/files/upload`, {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: formData
+  });
+
+  const data = await res.json();
+  progress.textContent = data.success
+    ? `✓ ${data.uploaded.length} Datei(en) hochgeladen`
+    : '✗ Fehler beim Upload';
+
+  setTimeout(() => progress.remove(), 3000);
+  input.value = '';
+  loadFiles(currentFilePath);
 }
 
 // ─── BACKUPS ─────────────────────────────────────────
@@ -355,6 +537,8 @@ async function saveSettings() {
       port: parseInt(document.getElementById('set-port').value),
       max_players: parseInt(document.getElementById('set-maxplayers').value),
       ram: parseInt(document.getElementById('set-ram').value),
+      backup_path: document.getElementById('set-backup-path').value || null,
+      backup_drive: document.getElementById('set-backup-drive').value || null,
     })
   });
   if (res?.success) {
@@ -363,10 +547,63 @@ async function saveSettings() {
   }
 }
 
+
 async function deleteServer() {
-  if (!confirm(`Server "${currentServer?.name}" wirklich löschen? Alle Dateien bleiben erhalten.`)) return;
-  await api(`/api/servers/${serverId}`, { method: 'DELETE' });
+  if (!confirm(`Server "${currentServer?.name}" wirklich löschen? Alle Dateien werden unwiderruflich gelöscht!`)) return;
+  
+  const res = await api(`/api/servers/${serverId}?deleteFiles=true`, { method: 'DELETE' });
+  if (res?.error) return alert(res.error);
   window.location.href = '/';
+}
+
+// ─── LOG AKTIONEN ────────────────────────────────────
+function getLogText() {
+  const lines = document.querySelectorAll('#console-out .log-line');
+  return Array.from(lines).map(l => {
+    const time = l.querySelector('.log-time')?.textContent || '';
+    const msg = l.querySelector('[class^="log-"]')?.textContent || '';
+    return `[${time}] ${msg}`;
+  }).join('\n');
+}
+
+function copyLogs() {
+  const text = getLogText();
+  if (!text) return alert('Keine Logs vorhanden');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.console-toolbar .btn');
+    if (!btn) return;
+    const old = btn.textContent;
+    btn.textContent = '✓ Kopiert!';
+    setTimeout(() => btn.textContent = old, 2000);
+  });
+}
+
+function saveLogs() {
+  const text = getLogText();
+  if (!text) return alert('Keine Logs vorhanden');
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `server-${serverId}-${timestamp}.log`;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+}
+
+async function clearLogs() {
+  if (!confirm('Logs wirklich leeren? Die Log-Datei auf dem Server wird ebenfalls gelöscht.')) return;
+  
+  const res = await api(`/api/servers/${serverId}/logs`, { method: 'DELETE' });
+  if (res?.error) return alert(res.error);
+  
+  document.getElementById('console-out').innerHTML = '';
+  updateLogCount();
+}
+
+function updateLogCount() {
+  const count = document.querySelectorAll('#console-out .log-line').length;
+  const el = document.getElementById('log-count');
+  if (el) el.textContent = `${count} Zeilen`;
 }
 
 // ─── TABS ────────────────────────────────────────────
@@ -378,6 +615,34 @@ function switchTab(name, el) {
 
   if (name === 'files') loadFiles();
   if (name === 'backups') loadBackups();
+  if (name === 'console') loadExistingLogs();
+}
+
+async function loadExistingLogs() {
+  const out = document.getElementById('console-out');
+  if (!out) return;
+  out.innerHTML = '';
+
+  const logs = await api(`/api/servers/${serverId}/logs`);
+  if (!logs || !logs.length) {
+    out.innerHTML = '<div style="color:#6e7681;padding:8px">Noch keine Logs vorhanden.</div>';
+    return;
+  }
+
+  logs.forEach(line => {
+    // Format: [2026-05-09T12:00:00.000Z] [info] Nachricht
+    const match = line.match(/\[(.+?)\] \[(.+?)\] (.+)/);
+    if (match) {
+      const time = new Date(match[1]).toLocaleTimeString('de-DE', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      });
+      appendLog(match[2], match[3], time);
+    } else {
+      appendLog('info', line, '—');
+    }
+  });
+
+  out.scrollTop = out.scrollHeight;
 }
 
 // ─── HELPERS ─────────────────────────────────────────
@@ -402,6 +667,41 @@ function escapeHtml(text) {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+function formatUptime(seconds) {
+  if (!seconds) return '—';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+async function loadDrivesForSettings() {
+  const drives = await api('/api/system/drives');
+  if (!drives) return;
+
+  const select = document.getElementById('set-backup-drive');
+  if (!select) return;
+
+  const current = document.getElementById('set-backup-path').value;
+  select.innerHTML = '<option value="">Standard</option>' +
+    drives.map(d => `<option value="${d.mount}" ${current.startsWith(d.mount) ? 'selected' : ''}>
+      ${d.mount} (${d.free} GB frei / ${d.size} GB)
+    </option>`).join('');
+}
+
+function updateBackupPath() {
+  const drive = document.getElementById('set-backup-drive').value;
+  const pathEl = document.getElementById('set-backup-path');
+  if (drive && currentServer) {
+    const serverName = currentServer.name.toLowerCase().replace(/\s+/g, '-');
+    pathEl.value = drive + '/backups/' + serverName;
+  } else if (!drive) {
+    pathEl.value = '';
+  }
 }
 
 init();

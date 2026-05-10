@@ -1,128 +1,195 @@
-const { execSync, spawn } = require('child_process');
+const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
+const treeKill = require('tree-kill');
 const db = require('./database');
 
-// Laufende Prozesse im Speicher
 const runningServers = new Map();
 
-// Server starten
 async function startServer(serverId, io) {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
   if (!server) throw new Error('Server nicht gefunden');
   if (runningServers.has(serverId)) throw new Error('Server läuft bereits');
 
-  // Ordner erstellen falls nicht vorhanden
-  if (!fs.existsSync(server.path)) {
-    fs.mkdirSync(server.path, { recursive: true });
+  const serverPath = server.path;
+  if (!fs.existsSync(serverPath)) {
+    throw new Error('Server-Verzeichnis nicht gefunden — bitte erst installieren');
   }
 
   let command, args;
+  const isWindows = process.platform === 'win32';
 
   if (server.game === 'Minecraft') {
-    const jarFile = path.join(server.path, 'server.jar');
-    if (!fs.existsSync(jarFile)) {
-      throw new Error('server.jar nicht gefunden — bitte erst installieren');
+    const isForge = server.loader === 'forge' || server.loader === 'neoforge';
+
+    if (isForge) {
+      const runScript = path.join(serverPath, isWindows ? 'run.bat' : 'run.sh');
+      if (!fs.existsSync(runScript)) {
+        throw new Error('run.bat/run.sh nicht gefunden — bitte erst installieren');
+      }
+
+      if (isWindows) {
+        const batContent = fs.readFileSync(runScript, 'utf8');
+        const javaLine = batContent.split('\n').find(l => l.trim().startsWith('java '));
+        if (!javaLine) throw new Error('Kein java Befehl in run.bat gefunden');
+        const cleanLine = javaLine.trim().replace('%*', '').replace('pause', '').trim();
+        command = 'cmd';
+        args = ['/c', cleanLine];
+      } else {
+        const shContent = fs.readFileSync(runScript, 'utf8');
+        const javaLine = shContent.split('\n').find(l => l.trim().startsWith('java '));
+        if (javaLine) {
+          const cleanLine = javaLine.trim().replace('"$@"', '').replace("'$@'", '').trim();
+          command = 'bash';
+          args = ['-c', cleanLine];
+        } else {
+          command = 'bash';
+          args = [runScript];
+        }
+      }
+    } else {
+      const jarFile = path.join(serverPath, 'server.jar');
+      if (!fs.existsSync(jarFile)) {
+        throw new Error('server.jar nicht gefunden — bitte erst installieren');
+      }
+      command = 'java';
+      args = [
+        `-Xmx${server.ram || 4}G`,
+        `-Xms1G`,
+        '-XX:+UseG1GC',
+        '-XX:+ParallelRefProcEnabled',
+        '-XX:MaxGCPauseMillis=200',
+        '-jar', 'server.jar',
+        '--nogui'
+      ];
     }
-    command = 'java';
-    args = [
-      `-Xmx${server.ram}G`,
-      `-Xms1G`,
-      '-jar', jarFile,
-      '--nogui'
-    ];
   } else if (server.game === 'Satisfactory') {
-    command = path.join(server.path, 'FactoryServer.sh');
-    args = [];
+    command = path.join(serverPath, isWindows ? 'FactoryServer.exe' : 'FactoryServer.sh');
+    args = ['-unattended'];
   } else if (server.game === 'CS2') {
-    command = path.join(server.path, 'game', 'bin', 'linuxsteamrt64', 'cs2');
-    args = ['-dedicated'];
+    command = path.join(serverPath, isWindows ? 'srcds.exe' : 'srcds.sh');
+    args = ['-dedicated', `-port ${server.port || 27015}`];
+  } else if (server.game === 'Valheim') {
+    command = path.join(serverPath, isWindows ? 'valheim_server.exe' : 'valheim_server.x86_64');
+    args = ['-name', server.name, '-port', server.port || 2456, '-nographics', '-batchmode'];
+  } else if (server.game === 'ARK') {
+    command = path.join(serverPath, 'ShooterGame', 'Binaries', 'Win64', 'ShooterGameServer.exe');
+    args = [`TheIsland?listen?Port=${server.port || 7777}`];
   } else {
-    throw new Error('Spiel nicht unterstützt');
+    throw new Error(`Spiel "${server.game}" wird noch nicht unterstützt`);
   }
 
-  const process = spawn(command, args, {
-    cwd: server.path,
-    stdio: ['pipe', 'pipe', 'pipe']
+  const logDir = path.join(serverPath, 'logs');
+  fs.mkdirSync(logDir, { recursive: true });
+  const logFile = path.join(logDir, 'gamepanel.log');
+
+  console.log('Starte Server mit Befehl:', command, args);
+
+  const child = spawn(command, args, {
+    cwd: serverPath,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    shell: true
   });
 
-  runningServers.set(serverId, process);
-  db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('online', serverId);
+  runningServers.set(serverId, {
+    process: child,
+    startTime: Date.now(),
+    pid: child.pid
+  });
 
-  // Logs ins Frontend streamen
+  db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('online', serverId);
+  io.emit(`server-status-${serverId}`, { status: 'online' });
+
   const emitLog = (type, data) => {
-    const line = data.toString().trim();
-    if (!line) return;
-    line.split('\n').forEach(msg => {
+    const lines = data.toString().split('\n');
+    lines.forEach(line => {
+      line = line.trim();
+      if (!line) return;
       io.emit(`server-log-${serverId}`, {
-        time: new Date().toLocaleTimeString(),
+        time: new Date().toLocaleTimeString('de-DE', {
+          hour: '2-digit', minute: '2-digit', second: '2-digit'
+        }),
         type,
-        message: msg
+        message: line
       });
-      // Log in Datei speichern
-      const logFile = path.join(server.path, 'logs', 'gamepanel.log');
-      fs.mkdirSync(path.dirname(logFile), { recursive: true });
-      fs.appendFileSync(logFile, `[${new Date().toISOString()}] ${msg}\n`);
+      fs.appendFileSync(logFile, `[${new Date().toISOString()}] [${type}] ${line}\n`);
     });
   };
 
-  process.stdout.on('data', data => emitLog('info', data));
-  process.stderr.on('data', data => emitLog('warn', data));
+  child.stdout.on('data', data => emitLog('info', data));
+  child.stderr.on('data', data => emitLog('warn', data));
 
-  process.on('close', (code) => {
+  child.on('error', (err) => {
+    emitLog('error', `Prozess-Fehler: ${err.message}`);
+    runningServers.delete(serverId);
+    db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
+    io.emit(`server-status-${serverId}`, { status: 'offline' });
+  });
+
+  child.on('close', (code) => {
     runningServers.delete(serverId);
     db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
     io.emit(`server-log-${serverId}`, {
-      time: new Date().toLocaleTimeString(),
-      type: 'error',
+      time: new Date().toLocaleTimeString('de-DE', {
+        hour: '2-digit', minute: '2-digit', second: '2-digit'
+      }),
+      type: 'warn',
       message: `Server gestoppt (Exit code: ${code})`
     });
     io.emit(`server-status-${serverId}`, { status: 'offline' });
   });
 
-  io.emit(`server-status-${serverId}`, { status: 'online' });
-  return true;
+  return { pid: child.pid };
 }
 
-// Server stoppen
 async function stopServer(serverId) {
-  const process = runningServers.get(serverId);
-  if (!process) throw new Error('Server läuft nicht');
+  const entry = runningServers.get(serverId);
+  if (!entry) throw new Error('Server läuft nicht');
 
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
 
-  // Minecraft sauber stoppen
-  if (server.game === 'Minecraft' && process.stdin) {
-    process.stdin.write('stop\n');
-  } else {
-    process.kill('SIGTERM');
-  }
+  return new Promise((resolve) => {
+    if (server.game === 'Minecraft' && entry.process.stdin) {
+      try { entry.process.stdin.write('stop\n'); } catch (e) {}
+    }
 
-  // Warten bis wirklich gestoppt
-  await new Promise(resolve => setTimeout(resolve, 3000));
-  if (runningServers.has(serverId)) {
-    process.kill('SIGKILL');
-    runningServers.delete(serverId);
-  }
+    const timeout = setTimeout(() => {
+      if (runningServers.has(serverId)) {
+        treeKill(entry.process.pid, 'SIGKILL');
+        runningServers.delete(serverId);
+        db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
+      }
+      resolve();
+    }, 10000);
 
-  db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
-  return true;
+    entry.process.on('close', () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
 }
 
-// Befehl an Server senden
 function sendCommand(serverId, command) {
-  const process = runningServers.get(serverId);
-  if (!process) throw new Error('Server läuft nicht');
-  process.stdin.write(command + '\n');
+  const entry = runningServers.get(serverId);
+  if (!entry) throw new Error('Server läuft nicht');
+  if (!entry.process.stdin) throw new Error('Stdin nicht verfügbar');
+  entry.process.stdin.write(command + '\n');
   return true;
 }
 
-// Status prüfen
 function isRunning(serverId) {
   return runningServers.has(serverId);
 }
 
-// Logs aus Datei lesen
+function getServerInfo(serverId) {
+  const entry = runningServers.get(serverId);
+  if (!entry) return null;
+  return {
+    pid: entry.process.pid,
+    uptime: Math.round((Date.now() - entry.startTime) / 1000)
+  };
+}
+
 function getLogs(serverId, lines = 100) {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
   if (!server) return [];
@@ -132,4 +199,9 @@ function getLogs(serverId, lines = 100) {
   return content.split('\n').filter(Boolean).slice(-lines);
 }
 
-module.exports = { startServer, stopServer, sendCommand, isRunning, getLogs };
+function syncServerStatus() {
+  db.prepare("UPDATE servers SET status = 'offline' WHERE status = 'installing'").run();
+  console.log('Server-Status synchronisiert');
+}
+
+module.exports = { startServer, stopServer, sendCommand, isRunning, getServerInfo, getLogs, syncServerStatus };
