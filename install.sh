@@ -240,12 +240,6 @@ info "Firewall einrichten..."
 ufw allow ssh
 ufw allow 80/tcp
 ufw allow 443/tcp
-ufw allow 25565/tcp comment 'Minecraft'
-ufw allow 7777/tcp comment 'Satisfactory'
-ufw allow 27015/tcp comment 'CS2'
-ufw allow 2456:2458/udp comment 'Valheim'
-ufw allow 7778/tcp comment 'ARK'
-ufw allow 28015/tcp comment 'Rust'
 ufw --force enable
 log "Firewall konfiguriert"
 

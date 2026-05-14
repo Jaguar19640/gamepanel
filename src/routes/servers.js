@@ -43,6 +43,7 @@ router.post('/', requireAuth, (req, res) => {
   const { name, game, version, loader, port, max_players, ram } = req.body;
   if (!name || !game) return res.status(400).json({ error: 'Name und Spiel erforderlich' });
 
+  const serverPort = port || 25565;
   const installPath = path.join(
     process.env.SERVERS_PATH || './servers',
     game.toLowerCase(),
@@ -52,7 +53,7 @@ router.post('/', requireAuth, (req, res) => {
   const result = db.prepare(`
     INSERT INTO servers (name, game, version, loader, port, max_players, ram, path, created_by)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(name, game, version || 'latest', loader || 'vanilla', port || 25565, max_players || 20, ram || 4, installPath, req.user.id);
+  `).run(name, game, version || 'latest', loader || 'vanilla', serverPort, max_players || 20, ram || 4, installPath, req.user.id);
 
   fs.mkdirSync(installPath, { recursive: true });
   res.json({ success: true, id: result.lastInsertRowid });
@@ -60,10 +61,15 @@ router.post('/', requireAuth, (req, res) => {
 
 router.patch('/:id', requireAuth, (req, res) => {
   const { name, port, max_players, ram, backup_path, backup_drive } = req.body;
+  const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Nicht gefunden' });
+
+  const newPort = port || server.port;
   db.prepare(`
     UPDATE servers SET name=?, port=?, max_players=?, ram=?, backup_path=?, backup_drive=?
     WHERE id=?
-  `).run(name, port, max_players, ram, backup_path || null, backup_drive || null, req.params.id);
+  `).run(name, newPort, max_players, ram, backup_path || null, backup_drive || null, req.params.id);
+
   res.json({ success: true });
 });
 

@@ -93,6 +93,27 @@ if [ -f "$INSTALL_DIR/setup.js" ]; then
   log "Setup-Checks abgeschlossen"
 fi
 
+# ─── FIREWALL BEREINIGEN ──────────────────────────
+if command -v ufw >/dev/null 2>&1; then
+  if ufw status | grep -q "Status: active"; then
+    info "Bereinige Firewall-Regeln..."
+    ufw status numbered | tail -n +3 | tac | while IFS= read -r line; do
+      rule_number=$(echo "$line" | sed -E 's/^.*\[[[:space:]]*([0-9]+)[[:space:]]*\].*/\1/')
+      cleaned_line=$(echo "$line" | sed -E 's/^\[[[:space:]]*[0-9]+[[:space:]]*\][[:space:]]*//')
+      rule_port=$(echo "$cleaned_line" | awk '{print $1}')
+      case "$rule_port" in
+        22/tcp|22/udp|80/tcp|443/tcp|OpenSSH|HTTP|HTTPS)
+          continue
+          ;;
+      esac
+      printf 'y\n' | ufw delete "$rule_number" >/dev/null 2>&1 || warn "Konnte Firewall-Regel $rule_number nicht löschen"
+    done
+    log "Firewall-Bereinigung abgeschlossen"
+  else
+    warn "ufw installiert, aber nicht aktiviert"
+  fi
+fi
+
 # ─── DATENBANK MIGRATION (Falls notwendig) ──────────
 if [ -f "$INSTALL_DIR/migrate.js" ]; then
   info "Führe Datenbankmigrationen durch..."

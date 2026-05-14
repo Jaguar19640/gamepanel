@@ -4,6 +4,53 @@ const fs = require('fs');
 const treeKill = require('tree-kill');
 const db = require('./database');
 
+const BASE_NETWORK_PORTS = new Set(['22','80','443','OpenSSH','HTTP','HTTPS']);
+
+function isManagedPort(port) {
+  return port && !BASE_NETWORK_PORTS.has(String(port));
+}
+
+function ufwAvailable() {
+  try {
+    execSync('command -v ufw', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ufwAllowPort(port) {
+  if (!ufwAvailable() || !isManagedPort(port)) return;
+  try {
+    execSync(`ufw allow ${port}`, { stdio: 'ignore' });
+    console.log(`Firewall: ufw allow ${port}`);
+  } catch (e) {
+    console.warn(`Firewall: ufw allow ${port} fehlgeschlagen: ${e.message}`);
+  }
+}
+
+function countRunningServersUsingPort(port, excludeServerId = null) {
+  let count = 0;
+  for (const [id] of runningServers) {
+    if (excludeServerId !== null && id === excludeServerId) continue;
+    const other = db.prepare('SELECT port FROM servers WHERE id = ?').get(id);
+    if (other && other.port === port) count++;
+  }
+  return count;
+}
+
+function ufwDeletePortIfUnused(port, excludeServerId = null) {
+  if (!ufwAvailable() || !isManagedPort(port)) return;
+  if (countRunningServersUsingPort(port, excludeServerId) === 0) {
+    try {
+      execSync(`printf 'y\\n' | ufw delete allow ${port}`, { stdio: 'ignore' });
+      console.log(`Firewall: ufw delete allow ${port}`);
+    } catch (e) {
+      console.warn(`Firewall: ufw delete allow ${port} fehlgeschlagen: ${e.message}`);
+    }
+  }
+}
+
 const runningServers = new Map();
 
 function parseJavaMajorVersion(output) {
@@ -175,6 +222,7 @@ async function startServer(serverId, io) {
     checkJavaForMinecraft(server);
   }
 
+  ufwAllowPort(server.port);
   console.log('Starte Server mit Befehl:', command, args);
 
   const child = spawn(command, args, {
@@ -236,6 +284,7 @@ async function startServer(serverId, io) {
   child.on('close', (code) => {
     runningServers.delete(serverId);
     db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
+    ufwDeletePortIfUnused(server.port, serverId);
     io.emit(`server-log-${serverId}`, {
       time: new Date().toLocaleTimeString('de-DE', {
         hour: '2-digit', minute: '2-digit', second: '2-digit'
