@@ -1,3 +1,4 @@
+Mainly created for me and some friends to create game server just for fun.
 A panel to install on your server to create gameserver like for minecraft, satisfactory or other games. 
 
 default Usr: admin, admin (to create new admin. Default user will be deleted afterwards).
