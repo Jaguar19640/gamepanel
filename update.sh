@@ -121,6 +121,20 @@ if [ -f "$INSTALL_DIR/migrate.js" ]; then
   log "Migrationen abgeschlossen"
 fi
 
+# ─── .ENV WIEDERHERSTELLEN UND AKTUALISIEREN ────────
+if [ -f "$BACKUP_DIR/.env" ]; then
+  info "Stelle .env wieder her..."
+  cp "$BACKUP_DIR/.env" "$INSTALL_DIR/.env"
+  
+  # JAVA_PATH hinzufügen falls nicht vorhanden
+  if ! grep -q "^JAVA_PATH=" "$INSTALL_DIR/.env"; then
+    echo "JAVA_PATH=/usr/lib/jvm/temurin-25-jdk/bin/java" >> "$INSTALL_DIR/.env"
+    log "JAVA_PATH zu .env hinzugefügt"
+  fi
+  
+  log ".env wiederhergestellt und aktualisiert"
+fi
+
 # ─── PANEL STARTEN ──────────────────────────────────
 info "Starte GamePanel..."
 pm2 start ecosystem.config.js || pm2 restart gamepanel

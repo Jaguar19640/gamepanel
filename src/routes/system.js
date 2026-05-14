@@ -4,6 +4,9 @@ const si = require('systeminformation');
 const { requireAuth } = require('./auth');
 const { getServerInfo } = require('../gameserver');
 const db = require('../database');
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
 
 router.get('/stats', requireAuth, async (req, res) => {
   try {
@@ -104,6 +107,41 @@ router.get('/drives', requireAuth, async (req, res) => {
       percent: f.use
     }));
     res.json(drives);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.get('/version', requireAuth, (req, res) => {
+  try {
+    // Aktuelle lokale Version (Git Commit)
+    let localVersion = 'unknown';
+    let remoteVersion = 'unknown';
+    let updateAvailable = false;
+    
+    try {
+      // Lokale Version aus Git
+      const gitLog = execSync('git log --oneline -1', { encoding: 'utf8', cwd: path.join(__dirname, '../..') });
+      localVersion = gitLog.split(' ')[0];
+      
+      // Remote Version prüfen
+      execSync('git fetch origin main', { cwd: path.join(__dirname, '../..') });
+      const localCommit = execSync('git rev-parse HEAD', { encoding: 'utf8', cwd: path.join(__dirname, '../..') }).trim();
+      const remoteCommit = execSync('git rev-parse origin/main', { encoding: 'utf8', cwd: path.join(__dirname, '../..') }).trim();
+      
+      remoteVersion = remoteCommit.substring(0, 7);
+      updateAvailable = localCommit !== remoteCommit;
+    } catch (e) {
+      // Git nicht verfügbar oder Fehler
+      console.warn('Versionsprüfung fehlgeschlagen:', e.message);
+    }
+    
+    res.json({
+      local: localVersion,
+      remote: remoteVersion,
+      updateAvailable,
+      lastChecked: new Date().toISOString()
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
