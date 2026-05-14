@@ -144,10 +144,35 @@ async function createEnvFile(steamPath) {
 async function checkJava() {
   console.log('\n☕ Prüfe Java...');
   try {
-    const version = execSync('java -version 2>&1', { encoding: 'utf8' });
-    console.log('✅ Java gefunden:', version.split('\n')[0]);
-  } catch {
-    console.log('⚠️ Java nicht gefunden!');
+    const versionOutput = execSync('java -version 2>&1', { encoding: 'utf8' });
+    const versionMatch = versionOutput.match(/version "(\d+)(?:\.(\d+))?/);
+    let major = versionMatch ? parseInt(versionMatch[1], 10) : null;
+    if (major === 1 && versionMatch && versionMatch[2]) {
+      major = parseInt(versionMatch[2], 10);
+    }
+
+    if (Number.isNaN(major) || major === null) {
+      throw new Error('Konnte Java-Version nicht ermitteln');
+    }
+
+    console.log('✅ Java gefunden:', versionOutput.split('\n')[0]);
+
+    if (major < 21) {
+      console.log('⚠️ Gefundene Java-Version ist älter als 21. Minecraft 1.26.1.2 oder neuer benötigt mindestens Java 21, häufiger jedoch Java 25.');
+      if (isLinux) {
+        console.log('📦 Installiere Java 21 als Mindestversion...');
+        execSync('sudo apt-get install -y openjdk-21-jre-headless', { stdio: 'inherit' });
+        console.log('✅ Java 21 installiert');
+      } else {
+        console.log('❌ Bitte Java 21 oder neuer manuell installieren: https://adoptium.net');
+      }
+    } else if (major < 25) {
+      console.log(`⚠️ Java ${major} gefunden. Für Minecraft 1.26.1.2 kann Java 25 oder neuer erforderlich sein.`);
+    } else {
+      console.log(`✅ Java ${major} ist installiert.`);
+    }
+  } catch (err) {
+    console.log('⚠️ Java nicht gefunden oder Version konnte nicht gelesen werden.');
     if (isLinux) {
       console.log('📦 Installiere Java 21...');
       try {
@@ -156,9 +181,10 @@ async function checkJava() {
       } catch (e) {
         console.log('❌ Java-Installation fehlgeschlagen — bitte manuell installieren');
         console.log('   sudo apt-get install openjdk-21-jre-headless');
+        console.log('   oder installieren Sie eine neuere Java-Version, z. B. Java 25, falls erforderlich.');
       }
     } else {
-      console.log('❌ Bitte Java 21 manuell installieren: https://adoptium.net');
+      console.log('❌ Bitte Java 21 oder neuer manuell installieren: https://adoptium.net');
     }
   }
 }

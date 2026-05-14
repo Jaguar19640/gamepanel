@@ -1,10 +1,56 @@
-const { spawn } = require('child_process');
+const { execSync, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const treeKill = require('tree-kill');
 const db = require('./database');
 
 const runningServers = new Map();
+
+function parseJavaMajorVersion(output) {
+  const versionMatch = output.match(/version "(\d+)(?:\.(\d+))?/);
+  if (!versionMatch) return null;
+  let major = parseInt(versionMatch[1], 10);
+  if (major === 1 && versionMatch[2]) {
+    major = parseInt(versionMatch[2], 10);
+  }
+  return Number.isNaN(major) ? null : major;
+}
+
+function isMinecraftVersionAtLeast(version, major, minor = 0) {
+  if (!version) return false;
+  const parts = version.split('.');
+  const foundMajor = parseInt(parts[0], 10);
+  const foundMinor = parseInt(parts[1], 10) || 0;
+  if (Number.isNaN(foundMajor)) return false;
+  return foundMajor > major || (foundMajor === major && foundMinor >= minor);
+}
+
+function checkJavaForMinecraft(server) {
+  const javaBinary = process.env.JAVA_PATH || 'java';
+  let output;
+  try {
+    output = execSync(`"${javaBinary}" -version 2>&1`, { encoding: 'utf8' });
+  } catch (err) {
+    throw new Error(`Java nicht gefunden oder nicht ausführbar (${javaBinary}). Bitte Java 21+ installieren und JAVA_PATH setzen.`);
+  }
+
+  const major = parseJavaMajorVersion(output);
+  if (!major) {
+    throw new Error('Konnte die Java-Version nicht ermitteln. Bitte prüfen Sie Ihre Java-Installation.');
+  }
+
+  if (major < 21) {
+    throw new Error(`Gefundene Java-Version ${major} ist zu alt. Minecraft benötigt Java 21 oder neuer.`);
+  }
+
+  if (isMinecraftVersionAtLeast(server.version, 1, 26) && major < 25) {
+    throw new Error(`Minecraft ${server.version} benötigt für diesen Build vermutlich Java 25 oder neuer. Gefundene Java-Version: ${major}.`);
+  }
+
+  if (major < 25) {
+    console.warn(`Hinweis: Gefundene Java-Version ${major} ist für die neuesten Minecraft-Builds möglicherweise nicht ausreichend.`);
+  }
+}
 
 // Erkennung wann ein Server wirklich online ist
 function isServerReady(game, loader, line) {
@@ -124,6 +170,10 @@ async function startServer(serverId, io) {
   const logDir = path.join(serverPath, 'logs');
   fs.mkdirSync(logDir, { recursive: true });
   const logFile = path.join(logDir, 'gamepanel.log');
+
+  if (server.game === 'Minecraft' && command === 'java') {
+    checkJavaForMinecraft(server);
+  }
 
   console.log('Starte Server mit Befehl:', command, args);
 
