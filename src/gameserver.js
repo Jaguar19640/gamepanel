@@ -99,22 +99,20 @@ function checkJavaForMinecraft(server) {
   }
 }
 
-// Erkennung wann ein Server wirklich online ist
 function isServerReady(game, loader, line) {
   switch (game) {
     case 'Minecraft':
-      // Vanilla/Paper/Spigot/Fabric/Forge/NeoForge
       return line.includes('Done') && line.includes('For help');
     case 'Satisfactory':
       return line.includes('Server started') ||
              line.includes('Server is up') ||
              line.includes('Listening on port');
     case 'CS2':
-  return line.includes('Server is hibernating') ||
-         line.includes('VAC secure mode') ||
-         line.includes('Network: IP') ||
-         line.includes('Assigned anonymous gameserver') ||
-         line.includes('sv_setsteamaccount');
+      return line.includes('Server is hibernating') ||
+             line.includes('VAC secure mode') ||
+             line.includes('Network: IP') ||
+             line.includes('Assigned anonymous gameserver') ||
+             line.includes('sv_setsteamaccount');
     case 'Valheim':
       return line.includes('Game server connected') ||
              line.includes('Zonesystem Awake') ||
@@ -157,20 +155,9 @@ async function startServer(serverId, io) {
         command = 'cmd';
         args = ['/c', cleanLine];
       } else {
-        const shContent = fs.readFileSync(runScript, 'utf8');
-        const javaLine = shContent.split('\n').find(l => l.trim().startsWith('java ') || l.trim().startsWith('exec java '));
-        if (javaLine) {
-          const cleanLine = javaLine.trim()
-            .replace(/^exec\s+/, '')
-            .replace('"$@"', '')
-            .replace("'$@'", '')
-            .trim();
-          command = 'bash';
-          args = ['-c', cleanLine];
-        } else {
-          command = 'bash';
-          args = [runScript];
-        }
+        fs.chmodSync(runScript, '755');
+        command = 'bash';
+        args = [runScript];
       }
     } else {
       const jarFile = path.join(serverPath, 'server.jar');
@@ -196,7 +183,7 @@ async function startServer(serverId, io) {
       command = path.join(serverPath, 'FactoryServer.sh');
       args = ['-unattended'];
     }
-   } else if (server.game === 'CS2') {
+  } else if (server.game === 'CS2') {
     if (isWindows) {
       command = 'cmd';
       args = ['/c', `"${path.resolve(path.join(serverPath, 'srcds.exe'))}" -dedicated -port ${server.port || 27015} -game csgo`];
@@ -237,7 +224,6 @@ async function startServer(serverId, io) {
     pid: child.pid
   });
 
-  // Status auf booting setzen
   db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('booting', serverId);
   io.emit(`server-status-${serverId}`, { status: 'booting' });
   io.emit('servers-updated');
@@ -259,7 +245,6 @@ async function startServer(serverId, io) {
       });
       fs.appendFileSync(logFile, `[${new Date().toISOString()}] [${type}] ${line}\n`);
 
-      // Prüfen ob Server bereit ist
       if (!isOnline && isServerReady(server.game, server.loader, line)) {
         isOnline = true;
         db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('online', serverId);
