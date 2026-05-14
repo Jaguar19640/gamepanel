@@ -117,6 +117,11 @@ function updateStatusUI(status) {
     text.textContent = 'Online';
     btnStart.style.display = 'none';
     btnStop.style.display = 'inline-flex';
+  } else if (status === 'booting') {
+    dot.className = 'status-dot dot-booting';
+    text.textContent = '⏳ Booting...';
+    btnStart.style.display = 'none';
+    btnStop.style.display = 'inline-flex';
   } else {
     dot.className = 'status-dot dot-offline';
     text.textContent = 'Offline';

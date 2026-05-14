@@ -6,6 +6,34 @@ const db = require('./database');
 
 const runningServers = new Map();
 
+// Erkennung wann ein Server wirklich online ist
+function isServerReady(game, loader, line) {
+  switch (game) {
+    case 'Minecraft':
+      // Vanilla/Paper/Spigot/Fabric/Forge/NeoForge
+      return line.includes('Done') && line.includes('For help');
+    case 'Satisfactory':
+      return line.includes('Server started') ||
+             line.includes('Server is up') ||
+             line.includes('Listening on port');
+    case 'CS2':
+  return line.includes('Server is hibernating') ||
+         line.includes('VAC secure mode') ||
+         line.includes('Network: IP') ||
+         line.includes('Assigned anonymous gameserver') ||
+         line.includes('sv_setsteamaccount');
+    case 'Valheim':
+      return line.includes('Game server connected') ||
+             line.includes('Zonesystem Awake') ||
+             line.includes('DungeonDB Awake');
+    case 'ARK':
+      return line.includes('Server started') ||
+             line.includes('Full server startup');
+    default:
+      return false;
+  }
+}
+
 async function startServer(serverId, io) {
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
   if (!server) throw new Error('Server nicht gefunden');
@@ -37,9 +65,13 @@ async function startServer(serverId, io) {
         args = ['/c', cleanLine];
       } else {
         const shContent = fs.readFileSync(runScript, 'utf8');
-        const javaLine = shContent.split('\n').find(l => l.trim().startsWith('java '));
+        const javaLine = shContent.split('\n').find(l => l.trim().startsWith('java ') || l.trim().startsWith('exec java '));
         if (javaLine) {
-          const cleanLine = javaLine.trim().replace('"$@"', '').replace("'$@'", '').trim();
+          const cleanLine = javaLine.trim()
+            .replace(/^exec\s+/, '')
+            .replace('"$@"', '')
+            .replace("'$@'", '')
+            .trim();
           command = 'bash';
           args = ['-c', cleanLine];
         } else {
@@ -64,11 +96,21 @@ async function startServer(serverId, io) {
       ];
     }
   } else if (server.game === 'Satisfactory') {
-    command = path.join(serverPath, isWindows ? 'FactoryServer.exe' : 'FactoryServer.sh');
-    args = ['-unattended'];
-  } else if (server.game === 'CS2') {
-    command = path.join(serverPath, isWindows ? 'srcds.exe' : 'srcds.sh');
-    args = ['-dedicated', `-port ${server.port || 27015}`];
+    if (isWindows) {
+      command = 'cmd';
+      args = ['/c', `"${path.resolve(path.join(serverPath, 'FactoryServer.exe'))}" -unattended`];
+    } else {
+      command = path.join(serverPath, 'FactoryServer.sh');
+      args = ['-unattended'];
+    }
+   } else if (server.game === 'CS2') {
+    if (isWindows) {
+      command = 'cmd';
+      args = ['/c', `"${path.resolve(path.join(serverPath, 'srcds.exe'))}" -dedicated -port ${server.port || 27015} -game csgo`];
+    } else {
+      command = 'bash';
+      args = [path.join(serverPath, 'srcds_run'), '-dedicated', `-port ${server.port || 27015}`, '-game', 'csgo'];
+    }
   } else if (server.game === 'Valheim') {
     command = path.join(serverPath, isWindows ? 'valheim_server.exe' : 'valheim_server.x86_64');
     args = ['-name', server.name, '-port', server.port || 2456, '-nographics', '-batchmode'];
@@ -97,14 +139,19 @@ async function startServer(serverId, io) {
     pid: child.pid
   });
 
-  db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('online', serverId);
-  io.emit(`server-status-${serverId}`, { status: 'online' });
+  // Status auf booting setzen
+  db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('booting', serverId);
+  io.emit(`server-status-${serverId}`, { status: 'booting' });
+  io.emit('servers-updated');
+
+  let isOnline = false;
 
   const emitLog = (type, data) => {
     const lines = data.toString().split('\n');
     lines.forEach(line => {
       line = line.trim();
       if (!line) return;
+
       io.emit(`server-log-${serverId}`, {
         time: new Date().toLocaleTimeString('de-DE', {
           hour: '2-digit', minute: '2-digit', second: '2-digit'
@@ -113,6 +160,15 @@ async function startServer(serverId, io) {
         message: line
       });
       fs.appendFileSync(logFile, `[${new Date().toISOString()}] [${type}] ${line}\n`);
+
+      // Prüfen ob Server bereit ist
+      if (!isOnline && isServerReady(server.game, server.loader, line)) {
+        isOnline = true;
+        db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('online', serverId);
+        io.emit(`server-status-${serverId}`, { status: 'online' });
+        io.emit('servers-updated');
+        console.log(`Server ${server.name} ist jetzt online!`);
+      }
     });
   };
 
@@ -124,6 +180,7 @@ async function startServer(serverId, io) {
     runningServers.delete(serverId);
     db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('offline', serverId);
     io.emit(`server-status-${serverId}`, { status: 'offline' });
+    io.emit('servers-updated');
   });
 
   child.on('close', (code) => {
@@ -137,6 +194,7 @@ async function startServer(serverId, io) {
       message: `Server gestoppt (Exit code: ${code})`
     });
     io.emit(`server-status-${serverId}`, { status: 'offline' });
+    io.emit('servers-updated');
   });
 
   return { pid: child.pid };
@@ -151,6 +209,8 @@ async function stopServer(serverId) {
   return new Promise((resolve) => {
     if (server.game === 'Minecraft' && entry.process.stdin) {
       try { entry.process.stdin.write('stop\n'); } catch (e) {}
+    } else if (server.game === 'Satisfactory' && entry.process.stdin) {
+      try { entry.process.stdin.write('quit\n'); } catch (e) {}
     }
 
     const timeout = setTimeout(() => {

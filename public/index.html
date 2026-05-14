@@ -65,6 +65,34 @@
     </div>
   </div>
 
+<!-- Passwort ändern Screen -->
+<div id="change-password-screen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">
+      <span class="logo-icon" style="background:#d97706">🔒</span>
+      <div>
+        <div class="logo-text">Passwort einrichten</div>
+        <div class="logo-sub">Bitte wähle ein neues Passwort</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:#8b949e;margin-bottom:16px;line-height:1.6">
+      Du hast dich mit einem temporären Passwort eingeloggt. Bitte wähle jetzt ein eigenes Passwort.
+    </p>
+    <div id="cp-error" class="error-msg" style="display:none"></div>
+    <div class="form-field">
+      <label class="form-label">Neues Passwort</label>
+      <input class="form-input" id="cp-password" type="password" placeholder="Mindestens 8 Zeichen"
+        onkeydown="if(event.key==='Enter')changePassword()">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Passwort wiederholen</label>
+      <input class="form-input" id="cp-password2" type="password" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter')changePassword()">
+    </div>
+    <button class="btn primary" style="width:100%" onclick="changePassword()">Passwort speichern</button>
+  </div>
+</div>
+
   <!-- Hauptanwendung -->
   <div id="app" style="display:none">
     <div class="layout">
@@ -174,9 +202,11 @@
         <select class="form-input" id="new-game" onchange="onGameChange()">
           <option value="Minecraft">⬛ Minecraft</option>
           <option value="Satisfactory">🏭 Satisfactory</option>
-          <option value="CS2">🎯 Counter-Strike 2</option>
+          <option value="CS2">🎯 Counter-Strike 2 (srcds)</option>
           <option value="Valheim">⚔️ Valheim</option>
           <option value="ARK">🦕 ARK</option>
+          <option value="Rust">🔨 Rust</option>
+          <option value="Terraria">⚒️ Terraria</option>
         </select>
       </div>
       <div id="mc-options">
@@ -229,37 +259,67 @@
     </div>
   </div>
 
-  <!-- Benutzer erstellen Modal -->
-  <div id="user-modal" class="modal-bg" style="display:none">
-    <div class="modal">
-      <h2 class="modal-title">Neuen Benutzer erstellen</h2>
-      <div class="form-field">
-        <label class="form-label">Benutzername</label>
-        <input class="form-input" id="new-user-name" placeholder="benutzername">
-      </div>
-      <div class="form-field">
-        <label class="form-label">E-Mail (optional)</label>
-        <input class="form-input" id="new-user-email" placeholder="user@example.com">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Passwort</label>
-        <input class="form-input" id="new-user-password" type="password">
-      </div>
-      <div class="form-field">
-        <label class="form-label">Rolle</label>
-        <select class="form-input" id="new-user-role">
-          <option value="user">User</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeUserModal()">Abbrechen</button>
-        <button class="btn primary" onclick="createUser()">Erstellen</button>
-      </div>
+ <!-- Benutzer erstellen Modal -->
+<div id="user-modal" class="modal-bg" style="display:none">
+  <div class="modal">
+    <h2 class="modal-title">Neuen Benutzer einladen</h2>
+    <div class="form-field">
+      <label class="form-label">Benutzername</label>
+      <input class="form-input" id="new-user-name" placeholder="benutzername">
+    </div>
+    <div class="form-field">
+      <label class="form-label">E-Mail (optional)</label>
+      <input class="form-input" id="new-user-email" placeholder="user@example.com">
+    </div>
+    <div class="form-field">
+      <label class="form-label">Rolle</label>
+      <select class="form-input" id="new-user-role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+    </div>
+    <p style="font-size:11.5px;color:#8b949e;margin-top:8px;line-height:1.6">
+      Nach dem Erstellen wird ein OTP generiert das du dem Nutzer mitteilst. Der Nutzer kann damit sein eigenes Passwort einrichten.
+    </p>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeUserModal()">Abbrechen</button>
+      <button class="btn primary" onclick="createUser()">Erstellen & OTP generieren</button>
     </div>
   </div>
+</div>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/main.js"></script>
+
+<!-- OTP Modal -->
+<div id="otp-modal" class="modal-bg" style="display:none">
+  <div class="modal" style="max-width:420px">
+    <h2 class="modal-title">✅ Benutzer erstellt</h2>
+    <p style="font-size:12.5px;color:#8b949e;margin-bottom:16px;line-height:1.6">
+      Teile dem Nutzer folgendes temporäres Passwort mit. Er wird beim ersten Login aufgefordert ein neues Passwort zu vergeben.
+    </p>
+    <div style="background:#0d1117;border:1px solid #21262d;border-radius:8px;padding:14px;margin-bottom:16px">
+      <div style="font-size:11px;color:#8b949e;margin-bottom:6px">Benutzername</div>
+      <div style="font-family:monospace;font-size:14px;color:#f0f6fc;margin-bottom:12px" id="otp-display-username"></div>
+      <div style="font-size:11px;color:#8b949e;margin-bottom:6px">Temporäres Passwort (OTP)</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="font-family:monospace;font-size:22px;font-weight:600;color:#22c55e;letter-spacing:.15em" id="otp-display-code"></div>
+        <button class="btn" onclick="copyOtp()" id="otp-copy-btn" style="margin-left:auto">📋 Kopieren</button>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px 14px">
+      <div>
+        <div style="font-size:12px;color:#f0f6fc;font-weight:500">Gültigkeit</div>
+        <div style="font-size:11px;color:#8b949e;margin-top:2px" id="otp-validity-text">24 Stunden</div>
+      </div>
+      <button class="btn" id="otp-validity-btn" onclick="toggleOtpValidity()">Auf 7 Tage erweitern</button>
+    </div>
+    <p style="font-size:11px;color:#6e7681;margin-bottom:16px">
+      ⚠️ Dieses Passwort wird nur einmal angezeigt. Stelle sicher dass du es dem Nutzer mitteilst.
+    </p>
+    <button class="btn primary" style="width:100%" onclick="closeOtpModal()">Verstanden</button>
+  </div>
+</div>
+
 </body>
 </html>

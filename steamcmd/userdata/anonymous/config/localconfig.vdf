@@ -1,0 +1,143 @@
+"UserLocalConfigStore"
+{
+	"AppInfoChangeNumber"		"35796812"
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"apps"
+				{
+					"1690800"
+					{
+						"LastPlayed"		"1778529143"
+					}
+					"730"
+					{
+						"LastPlayed"		"1778530783"
+					}
+					"740"
+					{
+						"LastPlayed"		"1778531147"
+					}
+				}
+			}
+		}
+	}
+	"depots"
+	{
+		"1004"
+		{
+			"CDN"
+			{
+				"alibaba.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778539944"
+				}
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778539947"
+				}
+			}
+		}
+		"1690801"
+		{
+			"CDN"
+			{
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778539945"
+				}
+				"alibaba.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778539949"
+				}
+			}
+		}
+		"731"
+		{
+			"CDN"
+			{
+				"alibaba.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541585"
+				}
+				"google2.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541948"
+				}
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541951"
+				}
+			}
+		}
+		"2347770"
+		{
+			"CDN"
+			{
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541585"
+				}
+			}
+		}
+		"2347771"
+		{
+			"CDN"
+			{
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541586"
+				}
+			}
+		}
+		"2347774"
+		{
+			"CDN"
+			{
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541586"
+				}
+			}
+		}
+		"740"
+		{
+			"CDN"
+			{
+				"fastly.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778541948"
+				}
+				"edgenext.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778544217"
+				}
+				"steampipe.akamaized.net"
+				{
+					"token"		""
+					"Expires"		"1778544217"
+				}
+				"google2.cdn.steampipe.steamcontent.com"
+				{
+					"token"		""
+					"Expires"		"1778544217"
+				}
+			}
+		}
+	}
+}

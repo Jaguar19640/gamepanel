@@ -21,26 +21,38 @@ router.get('/stats', requireAuth, async (req, res) => {
     const serverStats = [];
 
     for (const server of servers) {
-      const info = getServerInfo(server.id);
-      if (!info || !info.pid) continue;
+  const info = getServerInfo(server.id);
+  if (!info || !info.pid) continue;
 
-      const serverProcs = processes.list.filter(p =>
-        p.pid === info.pid || p.parentPid === info.pid
-      );
+  const pid = info.pid;
 
-      const totalCpu = serverProcs.reduce((a, p) => a + (p.cpu || 0), 0);
-      const totalMem = serverProcs.reduce((a, p) => a + (p.memRss || 0), 0);
+  // Alle Prozesse finden die zu diesem Server gehören
+  const serverProcs = processes.list.filter(p => {
+    return p.pid === pid ||
+           p.parentPid === pid ||
+           p.ppid === pid;
+  });
 
-      serverStats.push({
-        id: server.id,
-        name: server.name,
-        game: server.game,
-        pid: info.pid,
-        uptime: info.uptime,
-        cpu: Math.round(totalCpu * 10) / 10,
-        ram: Math.round(totalMem / 1024 / 1024 * 10) / 10,
-      });
-    }
+  console.log(`Server ${server.name} PID ${pid} - Gefundene Prozesse:`, serverProcs.length);
+
+  const totalCpu = serverProcs.reduce((a, p) => a + (p.cpu || 0), 0);
+  const totalMem = serverProcs.reduce((a, p) => {
+    const mem = p.memRss || p.mem_rss || p.memVsz || p.mem || 0;
+    return a + mem;
+  }, 0);
+
+  console.log(`CPU: ${totalCpu}%, RAM: ${totalMem} KB`);
+
+  serverStats.push({
+    id: server.id,
+    name: server.name,
+    game: server.game,
+    pid,
+    uptime: info.uptime,
+    cpu: Math.round(totalCpu * 10) / 10,
+    ram: Math.round(totalMem / 1024 * 10) / 10,
+  });
+}
 
     res.json({
       cpu: {

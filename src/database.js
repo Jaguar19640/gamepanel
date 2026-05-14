@@ -12,7 +12,9 @@ db.exec(`
     role TEXT DEFAULT 'user',
     email TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    is_temp INTEGER DEFAULT 0
+    is_temp INTEGER DEFAULT 0,
+    otp_code TEXT,
+    otp_expires_at DATETIME
   );
 
   CREATE TABLE IF NOT EXISTS servers (

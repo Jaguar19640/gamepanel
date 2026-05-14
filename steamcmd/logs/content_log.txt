@@ -1,0 +1,278 @@
+
+
+[2026-05-11 21:52:19] Client version: 1778284286
+[2026-05-11 21:52:19] Loaded 0 apps from install folder "c:\users\oskar\desktop\gamepanel\servers\satisfactory\satistest\steamapps\appmanifest_*.acf".
+[2026-05-11 21:52:19] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 21:52:23] AppID 1690800 state changed : Update Required,
+[2026-05-11 21:52:23] AppID 1690800 scheduler update : Priority First, not played for 0 seconds, update disabled for 0 seconds
+[2026-05-11 21:52:23] AppID 1690800 state changed : Update Required,Update Queued,
+[2026-05-11 21:52:23] AppID 1690800 scheduler update : Priority First, not played for 0 seconds, update disabled for 0 seconds
+[2026-05-11 21:52:23] AppID 1690800 state changed : Update Required,Update Queued,Update Running,
+[2026-05-11 21:52:23] AppID 1690800 App update changed : Running Update,
+[2026-05-11 21:52:23] AppID 1690800 App update changed : Running Update,Reconfiguring,
+[2026-05-11 21:52:24] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 21:52:24] Moving to source priority class '2'
+[2026-05-11 21:52:24] Created download interface of type 'CDN' (2) to host alibaba.cdn.steampipe.steamcontent.com (alibaba.cdn.steampipe.steamcontent.com)
+[2026-05-11 21:52:24] Created download interface of type 'CDN' (2) to host fastly.cdn.steampipe.steamcontent.com (fastly.cdn.steampipe.steamcontent.com)
+[2026-05-11 21:52:24] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: alibaba.cdn.steampipe.steamcontent.com): AuthenticateDepotID (1004) - Success!
+[2026-05-11 21:52:24] HTTP/2 available
+[2026-05-11 21:52:24] Created ipv4-only http client
+[2026-05-11 21:52:24] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (18.66.242.92:80 / 18.66.242.92:80, host: alibaba.cdn.steampipe.steamcontent.com): alibaba.cdn.steampipe.steamcontent.com/depot/1004/manifest/5612541580377302256/5/11254721775338133281 - received 200 (OK) HTTP response
+[2026-05-11 21:52:24] HTTP (CDN,31) - fastly.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (1690801) - Success!
+[2026-05-11 21:52:25] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.119.82:443 / 146.75.119.82:443, host: fastly.cdn.steampipe.steamcontent.com): fastly.cdn.steampipe.steamcontent.com/depot/1690801/manifest/8640006480089236847/5/13059446798219589713 - received 200 (OK) HTTP response
+[2026-05-11 21:52:25] AppID 1690800 App update changed : Running Update,
+[2026-05-11 21:52:25] AppID 1690800 App update changed : Running Update,Verifying Installed,
+[2026-05-11 21:52:25] AppID 1690800 App update changed : Running Update,
+[2026-05-11 21:52:25] AppID 1690800 App update changed : Running Update,Preallocating,
+[2026-05-11 21:52:26] AppID 1690800 preallocated 485 files (12852 MB) 
+[2026-05-11 21:52:26] AppID 1690800 App update changed : Running Update,
+[2026-05-11 21:52:26] AppID 1690800 update started : download 0/3249664352, store 0/0, reuse 0/0, delta 0/0, stage 0/13502569330 
+[2026-05-11 21:52:26] AppID 1690800 state changed : Update Required,Update Queued,Update Running,Update Started,
+[2026-05-11 21:52:26] AppID 1690800 App update changed : Running Update,Downloading,Staging,
+[2026-05-11 21:52:26] Downloading 66 chunks for depot 1004 (5612541580377302256)
+[2026-05-11 21:52:26] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.119.82:443 / 146.75.119.82:443, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (1004) - Success!
+[2026-05-11 21:52:28] Downloading 13346 chunks for depot 1690801 (8640006480089236847)
+[2026-05-11 21:52:28] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (18.66.242.92:80 / 18.66.242.92:80, host: alibaba.cdn.steampipe.steamcontent.com): AuthenticateDepotID (1690801) - Success!
+[2026-05-11 21:52:36] Increasing target number of download connections to 4 (rate was 0.000, now 95.329)
+[2026-05-11 21:52:48] Increasing target number of download connections to 5 (rate was 95.329, now 137.171)
+[2026-05-11 21:53:37] Current download rate: 0.000 Mbps
+[2026-05-11 21:54:38] Current download rate: 0.000 Mbps
+[2026-05-11 21:55:39] Current download rate: 0.000 Mbps
+[2026-05-11 21:56:40] Current download rate: 0.000 Mbps
+[2026-05-11 21:57:24] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 21:57:40] Current download rate: 0.000 Mbps
+[2026-05-11 21:57:54] stats: (CDN, 33) alibaba.cdn.steampipe.steamcontent.com: 1041151393 Bytes, 102 sec (81.32 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 21:57:54] stats: (Invalid, 0) : 1924024458 Bytes, 106 sec (145.20 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 21:57:54] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 882873065 Bytes, 101 sec (70.07 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 21:58:41] Current download rate: 0.000 Mbps
+[2026-05-11 21:59:42] Current download rate: 0.000 Mbps
+[2026-05-11 22:00:43] Current download rate: 0.000 Mbps
+[2026-05-11 22:01:44] Current download rate: 0.000 Mbps
+[2026-05-11 22:02:29] AppID 1690800 App update changed : Running Update,
+[2026-05-11 22:02:29] AppID 1690800 App update changed : Running Update,Verifying Staged,
+[2026-05-11 22:02:34] Verified 2048 MB in 'C:\Users\Oskar\Desktop\gamepanel\steamcmd', clean bytes tally is now 2048 MB
+[2026-05-11 22:02:34] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 22:02:34] AppID 1690800 App update changed : Running Update,
+[2026-05-11 22:02:34] AppID 1690800 App update changed : Running Update,Committing,
+[2026-05-11 22:02:34] AppID 1690800 starting commit from "c:\users\oskar\desktop\gamepanel\servers\satisfactory\satistest\steamapps\downloading\1690800" to "c:\users\oskar\desktop\gamepanel\servers\satisfactory\satistest" : 1179 updated, 0 moved, 0 deleted files
+[2026-05-11 22:02:36] AppID 1690800 state changed : Fully Installed,Update Queued,Update Running,
+[2026-05-11 22:02:36] AppID 1690800 finished update, 2 mounted depots (BuildID 21237536) : 1004 (5612541580377302256),1690801 (8640006480089236847),
+[2026-05-11 22:02:36] AppID 1690800 App update changed : Running Update,
+[2026-05-11 22:02:36] AppID 1690800 App update changed : None
+[2026-05-11 22:02:36] AppID 1690800 state changed : Fully Installed,Update Queued,
+[2026-05-11 22:02:36] AppID 1690800 state changed : Fully Installed,
+[2026-05-11 22:02:36] AppID 1690800 scheduler finished : removed from schedule (result No Error, state 0xc) 
+[2026-05-11 22:02:38] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.119.82:443 / 146.75.119.82:443, host: fastly.cdn.steampipe.steamcontent.com): Closing connection
+[2026-05-11 22:02:38] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (18.66.242.209:80 / 18.66.242.209:80, host: alibaba.cdn.steampipe.steamcontent.com): Closing connection
+
+
+[2026-05-11 22:19:42] Client version: 1778284286
+[2026-05-11 22:19:42] Loaded 0 apps from install folder "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test\steamapps\appmanifest_*.acf".
+[2026-05-11 22:19:42] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 22:19:43] AppID 730 state changed : Update Required,
+[2026-05-11 22:19:43] AppID 730 scheduler update : Priority First, not played for 0 seconds, update disabled for 0 seconds
+[2026-05-11 22:19:43] AppID 730 state changed : Update Required,Update Queued,
+[2026-05-11 22:19:43] AppID 730 scheduler update : Priority First, not played for 0 seconds, update disabled for 0 seconds
+[2026-05-11 22:19:43] AppID 730 state changed : Update Required,Update Queued,Update Running,
+[2026-05-11 22:19:43] AppID 730 App update changed : Running Update,
+[2026-05-11 22:19:43] AppID 730 App update changed : Running Update,Reconfiguring,
+[2026-05-11 22:19:44] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:19:44] Moving to source priority class '2'
+[2026-05-11 22:19:44] Created download interface of type 'CDN' (2) to host alibaba.cdn.steampipe.steamcontent.com (alibaba.cdn.steampipe.steamcontent.com)
+[2026-05-11 22:19:44] Created download interface of type 'CDN' (2) to host fastly.cdn.steampipe.steamcontent.com (fastly.cdn.steampipe.steamcontent.com)
+[2026-05-11 22:19:44] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: alibaba.cdn.steampipe.steamcontent.com): AuthenticateDepotID (731) - Success!
+[2026-05-11 22:19:44] HTTP/2 available
+[2026-05-11 22:19:44] Created ipv4-only http client
+[2026-05-11 22:19:44] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (54.230.14.40:80 / 54.230.14.40:80, host: alibaba.cdn.steampipe.steamcontent.com): alibaba.cdn.steampipe.steamcontent.com/depot/731/manifest/7981316620093616591/5/113857704192757737 - received 200 (OK) HTTP response
+[2026-05-11 22:19:44] HTTP (CDN,31) - fastly.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (2347770) - Success!
+[2026-05-11 22:19:45] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): fastly.cdn.steampipe.steamcontent.com/depot/2347770/manifest/2562546595906122008/5/15138884349552929078 - received 200 (OK) HTTP response
+[2026-05-11 22:19:45] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (2347771) - Success!
+[2026-05-11 22:19:45] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): fastly.cdn.steampipe.steamcontent.com/depot/2347771/manifest/7514165481174355955/5/4352737817873967538 - received 200 (OK) HTTP response
+[2026-05-11 22:19:46] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (2347774) - Success!
+[2026-05-11 22:19:46] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): fastly.cdn.steampipe.steamcontent.com/depot/2347774/manifest/6214681302591931982/5/9861566225466580352 - received 200 (OK) HTTP response
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,Verifying Installed,
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,Preallocating,
+[2026-05-11 22:19:46] AppID 730 update canceled : Failed to preallocate (Not enough disk space) "53.58 GB"
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,Preallocating,Stopping,
+[2026-05-11 22:19:46] AppID 730 preallocated 0 files (0 MB) 
+[2026-05-11 22:19:46] AppID 730 App update changed : Running Update,Stopping,
+[2026-05-11 22:19:46] AppID 730 App update changed : None
+[2026-05-11 22:19:46] AppID 730 state changed : Update Required,Update Queued, (Not enough disk space)
+[2026-05-11 22:19:46] AppID 730 state changed : Update Required,Update Paused,
+[2026-05-11 22:19:46] AppID 730 scheduler finished : removed from schedule (result Not enough disk space, state 0x202) 
+[2026-05-11 22:19:47] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): Closing connection
+[2026-05-11 22:19:47] HTTP (CDN,33) - alibaba.cdn.steampipe.steamcontent.com (54.230.14.40:80 / 54.230.14.40:80, host: alibaba.cdn.steampipe.steamcontent.com): Closing connection
+
+
+[2026-05-11 22:20:40] Client version: 1778284286
+[2026-05-11 22:20:40] Loaded 1 apps from install folder "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test\steamapps\appmanifest_*.acf".
+[2026-05-11 22:20:40] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 22:20:41] AppID 730 scheduler update : Priority First, not played for 58 seconds, update disabled for 0 seconds
+[2026-05-11 22:20:41] AppID 730 state changed : Update Required,Update Queued,
+[2026-05-11 22:20:42] AppID 730 state changed : Update Required,Update Queued,Update Running,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,Reconfiguring,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,Verifying Installed,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,Preallocating,
+[2026-05-11 22:20:42] AppID 730 update canceled : Failed to preallocate (Not enough disk space) "53.58 GB"
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,Preallocating,Stopping,
+[2026-05-11 22:20:42] AppID 730 preallocated 0 files (0 MB) 
+[2026-05-11 22:20:42] AppID 730 App update changed : Running Update,Stopping,
+[2026-05-11 22:20:42] AppID 730 App update changed : None
+[2026-05-11 22:20:42] AppID 730 state changed : Update Required,Update Queued, (Not enough disk space)
+[2026-05-11 22:20:42] AppID 730 state changed : Update Required,Update Paused,
+[2026-05-11 22:20:42] AppID 730 scheduler finished : removed from schedule (result Not enough disk space, state 0x202) 
+
+
+[2026-05-11 22:23:56] Client version: 1778284286
+[2026-05-11 22:23:56] Loaded 1 apps from install folder "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test\steamapps\appmanifest_*.acf".
+[2026-05-11 22:23:56] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 22:23:57] AppID 730 scheduler update : Priority First, not played for 254 seconds, update disabled for 0 seconds
+[2026-05-11 22:23:57] AppID 730 state changed : Update Required,Update Queued,
+[2026-05-11 22:23:57] AppID 730 state changed : Update Required,Update Queued,Update Running,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,Reconfiguring,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,Verifying Installed,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,Preallocating,
+[2026-05-11 22:23:57] AppID 730 update canceled : Failed to preallocate (Not enough disk space) "53.58 GB"
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,Preallocating,Stopping,
+[2026-05-11 22:23:57] AppID 730 preallocated 0 files (0 MB) 
+[2026-05-11 22:23:57] AppID 730 App update changed : Running Update,Stopping,
+[2026-05-11 22:23:57] AppID 730 App update changed : None
+[2026-05-11 22:23:57] AppID 730 state changed : Update Required,Update Queued, (Not enough disk space)
+[2026-05-11 22:23:57] AppID 730 state changed : Update Required,Update Paused,
+[2026-05-11 22:23:57] AppID 730 scheduler finished : removed from schedule (result Not enough disk space, state 0x202) 
+
+
+[2026-05-11 22:25:45] Client version: 1778284286
+[2026-05-11 22:25:45] Loaded 1 apps from install folder "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test\steamapps\appmanifest_*.acf".
+[2026-05-11 22:25:45] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 22:25:46] AppID 740 state changed : Update Required,
+[2026-05-11 22:25:46] AppID 740 scheduler update : Priority First, not played for 4294967295 seconds, update disabled for 0 seconds
+[2026-05-11 22:25:46] AppID 740 state changed : Update Required,Update Queued,
+[2026-05-11 22:25:46] AppID 740 scheduler update : Priority First, not played for 4294967295 seconds, update disabled for 0 seconds
+[2026-05-11 22:25:46] AppID 740 state changed : Update Required,Update Queued,Update Running,
+[2026-05-11 22:25:46] AppID 740 App update changed : Running Update,
+[2026-05-11 22:25:46] AppID 740 App update changed : Running Update,Reconfiguring,
+[2026-05-11 22:25:47] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:25:47] Moving to source priority class '2'
+[2026-05-11 22:25:47] Created download interface of type 'CDN' (2) to host google2.cdn.steampipe.steamcontent.com (google2.cdn.steampipe.steamcontent.com)
+[2026-05-11 22:25:47] Created download interface of type 'CDN' (2) to host fastly.cdn.steampipe.steamcontent.com (fastly.cdn.steampipe.steamcontent.com)
+[2026-05-11 22:25:47] HTTP (CDN,35) - google2.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: google2.cdn.steampipe.steamcontent.com): AuthenticateDepotID (731) - Success!
+[2026-05-11 22:25:47] HTTP/2 available
+[2026-05-11 22:25:47] Created ipv4-only http client
+[2026-05-11 22:25:48] HTTPS (CDN,35) - google2.cdn.steampipe.steamcontent.com (34.104.36.43:443 / 34.104.36.43:443, host: google2.cdn.steampipe.steamcontent.com): google2.cdn.steampipe.steamcontent.com/depot/731/manifest/1224088799001669801/5/9289513985846494500 - received 200 (OK) HTTP response
+[2026-05-11 22:25:48] HTTP (CDN,31) - fastly.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (740) - Success!
+[2026-05-11 22:25:48] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): fastly.cdn.steampipe.steamcontent.com/depot/740/manifest/6998097922547485721/5/11380789211628555803 - received 200 (OK) HTTP response
+[2026-05-11 22:25:48] AppID 740 App update changed : Running Update,
+[2026-05-11 22:25:48] AppID 740 App update changed : Running Update,Verifying Installed,
+[2026-05-11 22:25:48] AppID 740 App update changed : Running Update,
+[2026-05-11 22:25:48] AppID 740 App update changed : Running Update,Preallocating,
+[2026-05-11 22:25:50] AppID 740 preallocated 872 files (33059 MB) 
+[2026-05-11 22:25:50] AppID 740 App update changed : Running Update,
+[2026-05-11 22:25:50] AppID 740 update started : download 0/14706250528, store 0/0, reuse 0/0, delta 0/0, stage 0/34705746562 
+[2026-05-11 22:25:50] AppID 740 state changed : Update Required,Update Queued,Update Running,Update Started,
+[2026-05-11 22:25:50] AppID 740 App update changed : Running Update,Downloading,Staging,
+[2026-05-11 22:25:50] Downloading 33392 chunks for depot 731 (1224088799001669801)
+[2026-05-11 22:25:50] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.123.82:443 / 146.75.123.82:443, host: fastly.cdn.steampipe.steamcontent.com): AuthenticateDepotID (731) - Success!
+[2026-05-11 22:26:00] Increasing target number of download connections to 4 (rate was 0.000, now 77.059)
+[2026-05-11 22:26:12] Increasing target number of download connections to 5 (rate was 77.059, now 132.482)
+[2026-05-11 22:27:01] Current download rate: 0.000 Mbps
+[2026-05-11 22:28:01] Current download rate: 118.582 Mbps
+[2026-05-11 22:29:02] Current download rate: 0.000 Mbps
+[2026-05-11 22:30:03] Current download rate: 8.243 Mbps
+[2026-05-11 22:30:47] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:31:04] Current download rate: 81.311 Mbps
+[2026-05-11 22:31:18] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 1072588033 Bytes, 138 sec (62.23 Mbps). 0 Hits / 3478 Misses (0 %, 0 % bytes)
+[2026-05-11 22:31:18] stats: (Invalid, 0) : 2537997130 Bytes, 147 sec (138.12 Mbps). 0 Hits / 3478 Misses (0 %, 0 % bytes)
+[2026-05-11 22:31:18] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 1465409097 Bytes, 142 sec (82.42 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:32:05] Current download rate: 62.929 Mbps
+[2026-05-11 22:33:06] Current download rate: 0.000 Mbps
+[2026-05-11 22:34:07] Current download rate: 0.000 Mbps
+[2026-05-11 22:35:07] Current download rate: 0.000 Mbps
+[2026-05-11 22:36:08] Current download rate: 0.000 Mbps
+[2026-05-11 22:36:17] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:36:25] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 586654448 Bytes, 77 sec (61.15 Mbps). 0 Hits / 5293 Misses (0 %, 0 % bytes)
+[2026-05-11 22:36:25] stats: (Invalid, 0) : 1410824176 Bytes, 82 sec (137.97 Mbps). 0 Hits / 5293 Misses (0 %, 0 % bytes)
+[2026-05-11 22:36:25] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 824169728 Bytes, 78 sec (84.33 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:37:09] Current download rate: 0.000 Mbps
+[2026-05-11 22:38:10] Current download rate: 6.310 Mbps
+[2026-05-11 22:39:10] Current download rate: 0.000 Mbps
+[2026-05-11 22:40:11] Current download rate: 0.000 Mbps
+[2026-05-11 22:41:11] Current download rate: 79.012 Mbps
+[2026-05-11 22:41:42] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 588739760 Bytes, 81 sec (58.37 Mbps). 0 Hits / 7069 Misses (0 %, 0 % bytes)
+[2026-05-11 22:41:42] stats: (Invalid, 0) : 1410698384 Bytes, 83 sec (135.37 Mbps). 0 Hits / 7069 Misses (0 %, 0 % bytes)
+[2026-05-11 22:41:42] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 821958624 Bytes, 78 sec (84.56 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:41:48] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:42:12] Current download rate: 0.000 Mbps
+[2026-05-11 22:43:13] Current download rate: 0.000 Mbps
+[2026-05-11 22:44:14] Current download rate: 0.000 Mbps
+[2026-05-11 22:45:15] Current download rate: 0.000 Mbps
+[2026-05-11 22:46:16] Current download rate: 0.000 Mbps
+[2026-05-11 22:46:44] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 548520432 Bytes, 74 sec (59.47 Mbps). 0 Hits / 8567 Misses (0 %, 0 % bytes)
+[2026-05-11 22:46:44] stats: (Invalid, 0) : 1303193856 Bytes, 78 sec (134.44 Mbps). 0 Hits / 8567 Misses (0 %, 0 % bytes)
+[2026-05-11 22:46:44] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 754673424 Bytes, 71 sec (84.79 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:47:16] Current download rate: 0.000 Mbps
+[2026-05-11 22:47:18] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:48:17] Current download rate: 0.000 Mbps
+[2026-05-11 22:49:18] Current download rate: 54.667 Mbps
+[2026-05-11 22:50:19] Current download rate: 0.000 Mbps
+[2026-05-11 22:51:20] Current download rate: 0.000 Mbps
+[2026-05-11 22:52:03] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 831834352 Bytes, 107 sec (62.24 Mbps). 0 Hits / 10717 Misses (0 %, 0 % bytes)
+[2026-05-11 22:52:03] stats: (Invalid, 0) : 1936648800 Bytes, 109 sec (142.12 Mbps). 0 Hits / 10717 Misses (0 %, 0 % bytes)
+[2026-05-11 22:52:03] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 1104814448 Bytes, 103 sec (85.84 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:52:21] Current download rate: 117.025 Mbps
+[2026-05-11 22:52:48] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:53:21] Current download rate: 54.175 Mbps
+[2026-05-11 22:54:22] Current download rate: 0.000 Mbps
+[2026-05-11 22:55:23] Current download rate: 0.000 Mbps
+[2026-05-11 22:56:24] Current download rate: 0.000 Mbps
+[2026-05-11 22:57:07] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 778524256 Bytes, 102 sec (60.92 Mbps). 0 Hits / 12261 Misses (0 %, 0 % bytes)
+[2026-05-11 22:57:07] stats: (Invalid, 0) : 1746567744 Bytes, 105 sec (132.81 Mbps). 0 Hits / 12261 Misses (0 %, 0 % bytes)
+[2026-05-11 22:57:07] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 968043488 Bytes, 98 sec (78.73 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 22:57:25] Current download rate: 83.956 Mbps
+[2026-05-11 22:58:19] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 22:58:26] Current download rate: 4.134 Mbps
+[2026-05-11 22:59:27] Current download rate: 94.914 Mbps
+[2026-05-11 23:00:27] Current download rate: 0.000 Mbps
+[2026-05-11 23:01:28] Current download rate: 117.230 Mbps
+[2026-05-11 23:02:09] stats: (CDN, 35) google2.cdn.steampipe.steamcontent.com: 1164411344 Bytes, 138 sec (67.53 Mbps). 0 Hits / 13986 Misses (0 %, 0 % bytes)
+[2026-05-11 23:02:09] stats: (Invalid, 0) : 2441691056 Bytes, 149 sec (131.17 Mbps). 0 Hits / 13986 Misses (0 %, 0 % bytes)
+[2026-05-11 23:02:09] stats: (CDN, 31) fastly.cdn.steampipe.steamcontent.com: 1277279712 Bytes, 136 sec (74.98 Mbps). 0 Hits / 0 Misses (0 %, 0 % bytes)
+[2026-05-11 23:02:29] Current download rate: 135.343 Mbps
+[2026-05-11 23:03:30] Current download rate: 0.000 Mbps
+[2026-05-11 23:03:36] Created download interface of type 'CDN' (2) to host edgenext.cdn.steampipe.steamcontent.com (edgenext.cdn.steampipe.steamcontent.com)
+[2026-05-11 23:03:36] Created download interface of type 'CDN' (2) to host steampipe.akamaized.net (steampipe.akamaized.net)
+[2026-05-11 23:03:36] Downloading 2156 chunks for depot 740 (6998097922547485721)
+[2026-05-11 23:03:36] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (0.0.0.0:0 / 0.0.0.0:0, host: edgenext.cdn.steampipe.steamcontent.com): AuthenticateDepotID (740) - Success!
+[2026-05-11 23:03:36] HTTP (CDN,11) - steampipe.akamaized.net (0.0.0.0:0 / 0.0.0.0:0, host: steampipe.akamaized.net): AuthenticateDepotID (740) - Success!
+[2026-05-11 23:03:36] HTTPS (CDN,35) - google2.cdn.steampipe.steamcontent.com (34.104.36.43:443 / 34.104.36.43:443, host: google2.cdn.steampipe.steamcontent.com): AuthenticateDepotID (740) - Success!
+[2026-05-11 23:03:37] HTTPS (CDN,11) - steampipe.akamaized.net (2.19.120.156:443 / 2.19.120.156:443, host: steampipe.akamaized.net): Negotiated HTTP/2
+[2026-05-11 23:03:49] Got 5 download sources and 0 caching proxies via ContentServerDirectoryService::BYieldingGetServersForSteamPipe (CellID 87 / Launcher 3)
+[2026-05-11 23:04:31] Current download rate: 0.000 Mbps
+[2026-05-11 23:05:32] Current download rate: 0.000 Mbps
+[2026-05-11 23:06:29] AppID 740 App update changed : Running Update,
+[2026-05-11 23:06:29] AppID 740 App update changed : Running Update,Verifying Staged,
+[2026-05-11 23:06:33] Current download rate: 0.000 Mbps
+[2026-05-11 23:06:38] Verified 2048 MB in 'C:\Users\Oskar\Desktop\gamepanel\steamcmd', clean bytes tally is now 2048 MB
+[2026-05-11 23:06:38] Triggered async write of Steam library folders configuration (1 libraries).
+[2026-05-11 23:06:38] AppID 740 App update changed : Running Update,
+[2026-05-11 23:06:38] AppID 740 App update changed : Running Update,Committing,
+[2026-05-11 23:06:38] AppID 740 starting commit from "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test\steamapps\downloading\740" to "c:\users\oskar\desktop\gamepanel\servers\cs2\cs2test" : 3112 updated, 0 moved, 0 deleted files
+[2026-05-11 23:06:43] AppID 740 state changed : Fully Installed,Update Queued,Update Running,
+[2026-05-11 23:06:43] AppID 740 finished update, 2 mounted depots (BuildID 12426148) : 731 (1224088799001669801),740 (6998097922547485721),
+[2026-05-11 23:06:43] AppID 740 App update changed : Running Update,
+[2026-05-11 23:06:43] AppID 740 App update changed : None
+[2026-05-11 23:06:43] AppID 740 state changed : Fully Installed,Update Queued,
+[2026-05-11 23:06:43] AppID 740 state changed : Fully Installed,
+[2026-05-11 23:06:43] AppID 740 scheduler finished : removed from schedule (result No Error, state 0xc) 
+[2026-05-11 23:06:45] HTTP/2 (CDN,11) - steampipe.akamaized.net (2.19.120.156:443 / 2.19.120.156:443, host: steampipe.akamaized.net): Closing connection
+[2026-05-11 23:06:45] HTTP (CDN,29) - edgenext.cdn.steampipe.steamcontent.com (154.85.94.60:80 / 154.85.94.60:80, host: edgenext.cdn.steampipe.steamcontent.com): Closing connection
+[2026-05-11 23:06:45] HTTPS (CDN,31) - fastly.cdn.steampipe.steamcontent.com (146.75.119.82:443 / 146.75.119.82:443, host: fastly.cdn.steampipe.steamcontent.com): Closing connection
+[2026-05-11 23:06:45] HTTPS (CDN,35) - google2.cdn.steampipe.steamcontent.com (34.104.36.43:443 / 34.104.36.43:443, host: google2.cdn.steampipe.steamcontent.com): Closing connection

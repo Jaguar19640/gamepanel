@@ -1,12 +1,14 @@
 const app = require('./src/app');
 const http = require('http');
 const { Server } = require('socket.io');
-const { syncServerStatus } = require('./src/gameserver');
 require('dotenv').config();
 
-const PORT = process.env.PORT || 3000;
+// Datenbank direkt beim Start importieren und Status korrigieren
+const db = require('./src/database');
+db.prepare("UPDATE servers SET status = 'offline' WHERE status = 'online' OR status = 'installing' OR status = 'booting'").run();
+console.log('Server-Status beim Start zurückgesetzt');
 
-// Server-Status beim Start synchronisieren
+const PORT = process.env.PORT || 3000;
 
 const server = http.createServer(app);
 const io = new Server(server, {

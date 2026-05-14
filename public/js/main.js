@@ -28,6 +28,8 @@ async function login() {
 
   if (currentUser.is_temp) {
     showScreen('setup');
+  } else if (currentUser.must_change_password) {
+    showScreen('change-password');
   } else {
     showScreen('app');
     initApp();
@@ -52,7 +54,9 @@ async function setupAdmin() {
     return;
   }
 
-  const res = await fetch('/api/auth/register', {
+  // Beim Setup-Admin: direkt mit Passwort registrieren
+  // Wir nutzen eine separate Route die kein OTP generiert
+  const res = await fetch('/api/auth/setup', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -86,6 +90,7 @@ function logout() {
 function showScreen(screen) {
   document.getElementById('login-screen').style.display = screen === 'login' ? 'flex' : 'none';
   document.getElementById('setup-screen').style.display = screen === 'setup' ? 'flex' : 'none';
+  document.getElementById('change-password-screen').style.display = screen === 'change-password' ? 'flex' : 'none';
   document.getElementById('app').style.display = screen === 'app' ? 'block' : 'none';
 }
 
@@ -316,8 +321,8 @@ function renderServerList(containerId, servers) {
         </div>
       </div>
       <div class="status">
-        <div class="status-dot ${s.status === 'online' ? 'dot-online' : 'dot-offline'}"></div>
-        ${s.status === 'online' ? 'Online' : 'Offline'}
+        <div class="status-dot ${s.status === 'online' ? 'dot-online' : s.status === 'booting' ? 'dot-booting' : 'dot-offline'}"></div>
+        ${s.status === 'online' ? 'Online' : s.status === 'booting' ? '⏳ Booting...' : 'Offline'}
       </div>
       <div class="server-actions">
         ${s.status === 'offline'
@@ -352,7 +357,14 @@ async function deleteServer(id) {
 // ─── SERVER MODAL ────────────────────────────────────
 const defaultPorts = {
   Minecraft: 25565, Satisfactory: 7777,
-  CS2: 27015, Valheim: 2456, ARK: 7778
+  CS2: 27015, Valheim: 2456, ARK: 7778,
+  Rust: 28015, Terraria: 7777
+};
+
+const defaultPlayers = {
+  Minecraft: 20, Satisfactory: 4,
+  CS2: 10, Valheim: 10, ARK: 70,
+  Rust: 50, Terraria: 8
 };
 
 function onGameChange() {
@@ -363,6 +375,8 @@ function onGameChange() {
   if (mcOptions) mcOptions.style.display = game === 'Minecraft' ? 'block' : 'none';
   const portEl = document.getElementById('new-port');
   if (portEl) portEl.value = defaultPorts[game] || 25565;
+  const playersEl = document.getElementById('new-maxplayers');
+  if (playersEl) playersEl.value = defaultPlayers[game] || 20;
   if (game === 'Minecraft') loadMinecraftVersions();
 }
 
@@ -545,22 +559,79 @@ function closeUserModal() {
   document.getElementById('user-modal').style.display = 'none';
 }
 
+let currentOtpUsername = '';
+let currentOtpCode = '';
+let currentOtpValidity = 24;
+
 async function createUser() {
   const username = document.getElementById('new-user-name').value;
   const email = document.getElementById('new-user-email').value;
-  const password = document.getElementById('new-user-password').value;
   const role = document.getElementById('new-user-role').value;
 
-  if (!username || !password) return alert('Bitte Name und Passwort eingeben!');
+  if (!username) return alert('Bitte Username eingeben!');
 
   const res = await api('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ username, email, password, role })
+    body: JSON.stringify({ username, email, role, validity_hours: currentOtpValidity })
   });
 
-  if (res.error) return alert(res.error);
+  if (!res || res.error) return alert(res?.error || 'Fehler');
+
   closeUserModal();
   loadUsers();
+
+  // OTP Modal anzeigen
+  currentOtpUsername = username;
+  currentOtpCode = res.otp;
+  currentOtpValidity = 24;
+
+  document.getElementById('otp-display-username').textContent = username;
+  document.getElementById('otp-display-code').textContent = res.otp;
+  document.getElementById('otp-validity-text').textContent = '24 Stunden';
+  document.getElementById('otp-validity-btn').textContent = 'Auf 7 Tage erweitern';
+  document.getElementById('otp-modal').style.display = 'flex';
+}
+
+function closeOtpModal() {
+  document.getElementById('otp-modal').style.display = 'none';
+}
+
+function copyOtp() {
+  const otp = document.getElementById('otp-display-code').textContent;
+  navigator.clipboard.writeText(otp).then(() => {
+    const btn = document.getElementById('otp-copy-btn');
+    btn.textContent = '✓ Kopiert!';
+    setTimeout(() => btn.textContent = '📋 Kopieren', 2000);
+  });
+}
+
+async function toggleOtpValidity() {
+  const btn = document.getElementById('otp-validity-btn');
+  const text = document.getElementById('otp-validity-text');
+
+  if (currentOtpValidity === 24) {
+    // Auf 7 Tage erweitern
+    const res = await api('/api/auth/extend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ username: currentOtpUsername, hours: 168 })
+    });
+    if (res?.success) {
+      currentOtpValidity = 168;
+      text.textContent = '7 Tage';
+      btn.textContent = 'Auf 24 Stunden reduzieren';
+    }
+  } else {
+    // Auf 24 Stunden reduzieren
+    const res = await api('/api/auth/extend-otp', {
+      method: 'POST',
+      body: JSON.stringify({ username: currentOtpUsername, hours: 24 })
+    });
+    if (res?.success) {
+      currentOtpValidity = 24;
+      text.textContent = '24 Stunden';
+      btn.textContent = 'Auf 7 Tage erweitern';
+    }
+  }
 }
 
 async function deleteUser(id) {
@@ -574,6 +645,19 @@ socket.on('log', (data) => {
   console.log(`[${data.time}] ${data.message}`);
 });
 
+socket.on('servers-updated', () => {
+  // Dashboard neu laden wenn aktiv
+  const dashboard = document.getElementById('page-dashboard');
+  if (dashboard && dashboard.classList.contains('active')) {
+    loadDashboard();
+  }
+  // Server-Liste neu laden wenn aktiv
+  const serversPage = document.getElementById('page-servers');
+  if (serversPage && serversPage.classList.contains('active')) {
+    loadServers();
+  }
+});
+
 // ─── START ───────────────────────────────────────────
 async function init() {
   if (!token) { showScreen('login'); return; }
@@ -584,10 +668,98 @@ async function init() {
   currentUser = user;
   if (user.is_temp) {
     showScreen('setup');
+  } else if (user.must_change_password) {
+    showScreen('change-password');
   } else {
     showScreen('app');
     initApp();
   }
+}
+
+async function redeemOtp() {
+  const username = document.getElementById('otp-username').value;
+  const otp = document.getElementById('otp-code').value;
+  const password = document.getElementById('otp-password').value;
+  const password2 = document.getElementById('otp-password2').value;
+  const errEl = document.getElementById('otp-error');
+
+  if (!username || !otp || !password || !password2) {
+    errEl.textContent = 'Bitte alle Felder ausfüllen';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  if (password !== password2) {
+    errEl.textContent = 'Passwörter stimmen nicht überein';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const res = await fetch('/api/auth/redeem-otp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, otp, password, password2 })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    errEl.textContent = data.error;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  // Direkt einloggen
+  token = data.token;
+  currentUser = data.user;
+  localStorage.setItem('token', token);
+  errEl.style.display = 'none';
+  showScreen('app');
+  initApp();
+}
+
+async function changePassword() {
+  const password = document.getElementById('cp-password').value;
+  const password2 = document.getElementById('cp-password2').value;
+  const errEl = document.getElementById('cp-error');
+
+  if (!password || !password2) {
+    errEl.textContent = 'Bitte beide Felder ausfüllen';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password !== password2) {
+    errEl.textContent = 'Passwörter stimmen nicht überein';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (password.length < 8) {
+    errEl.textContent = 'Passwort muss mindestens 8 Zeichen lang sein';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const res = await fetch('/api/auth/change-password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token
+    },
+    body: JSON.stringify({ password, password2 })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    errEl.textContent = data.error;
+    errEl.style.display = 'block';
+    return;
+  }
+
+  token = data.token;
+  currentUser = data.user;
+  localStorage.setItem('token', token);
+  errEl.style.display = 'none';
+  showScreen('app');
+  initApp();
 }
 
 init();
