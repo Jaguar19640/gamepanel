@@ -118,15 +118,21 @@ if [ -d "$INSTALL_DIR" ]; then
   fi
 fi
 
-# GitHub Repository klonen
+# GitHub Repository klonen (ohne Authentifizierungsprompt für public Repos)
 read -p "GitHub Repository URL (Enter für Standard): " REPO_URL
-REPO_URL=${REPO_URL:-"https://github.com/dein-username/gamepanel.git"}
+REPO_URL=${REPO_URL:-"https://github.com/Jaguar19640/gamepanel.git"}
+
+# Git Credential Helper für automatisierte Klone konfigurieren
+export GIT_ASKPASS=echo
+export GIT_TERMINAL_PROMPT=0
 
 if [ -d "$INSTALL_DIR" ]; then
   cd "$INSTALL_DIR"
-  git pull
+  git pull origin main 2>/dev/null || warn "Git pull fehlgeschlagen, versuche neuen Klon..."
 else
-  git clone "$REPO_URL" "$INSTALL_DIR"
+  git clone "$REPO_URL" "$INSTALL_DIR" 2>/dev/null || {
+    err "Git clone fehlgeschlagen. Überprüfe die Repository-URL und deine Internetverbindung."
+  }
   cd "$INSTALL_DIR"
 fi
 
