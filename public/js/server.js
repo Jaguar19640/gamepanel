@@ -411,27 +411,96 @@ async function uploadFiles() {
   for (const file of files) formData.append('files', file);
   formData.append('path', currentFilePath);
 
-  // Upload-Anzeige
+  // Progress UI erstellen
   const toolbar = document.querySelector('.files-toolbar');
-  const progress = document.createElement('div');
-  progress.style.cssText = 'font-size:12px;color:#22c55e;margin-left:8px';
-  progress.textContent = `⏳ Lade ${files.length} Datei(en) hoch...`;
-  toolbar.appendChild(progress);
+  const progressWrap = document.createElement('div');
+  progressWrap.id = 'upload-progress-wrap';
+  progressWrap.style.cssText = `
+    position:absolute;bottom:0;left:0;right:0;
+    background:#161b22;border-top:1px solid #21262d;
+    padding:12px 16px;z-index:10;
+  `;
+  progressWrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:12px;color:#f0f6fc;font-weight:500" id="upload-status">
+        ⬆ Lade ${files.length} Datei(en) hoch...
+      </span>
+      <span style="font-size:11px;color:#8b949e;font-family:monospace" id="upload-percent">0%</span>
+    </div>
+    <div style="height:6px;background:#21262d;border-radius:3px;overflow:hidden">
+      <div id="upload-bar" style="height:100%;background:#2563eb;border-radius:3px;width:0%;transition:width .1s"></div>
+    </div>
+    <div style="font-size:10px;color:#6e7681;margin-top:6px" id="upload-detail">Bereite Upload vor...</div>
+  `;
 
-  const res = await fetch(`/api/servers/${serverId}/files/upload`, {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + token },
-    body: formData
+  // In file-editor einfügen (relativ positioniert)
+  const fileEditor = document.getElementById('file-editor-pane') || document.getElementById('file-editor');
+  if (fileEditor) {
+    fileEditor.style.position = 'relative';
+    fileEditor.appendChild(progressWrap);
+  }
+
+  return new Promise((resolve) => {
+    const xhr = new XMLHttpRequest();
+
+    // Upload Progress
+    xhr.upload.addEventListener('progress', (e) => {
+      if (e.lengthComputable) {
+        const percent = Math.round((e.loaded / e.total) * 100);
+        const loaded = formatSize(e.loaded);
+        const total = formatSize(e.total);
+
+        document.getElementById('upload-bar').style.width = percent + '%';
+        document.getElementById('upload-percent').textContent = percent + '%';
+        document.getElementById('upload-detail').textContent = `${loaded} / ${total}`;
+
+        // Farbe bei 100%
+        if (percent === 100) {
+          document.getElementById('upload-bar').style.background = '#16a34a';
+          document.getElementById('upload-status').textContent = '⏳ Server verarbeitet Dateien...';
+        }
+      }
+    });
+
+    // Fertig
+    xhr.addEventListener('load', () => {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data.success) {
+          document.getElementById('upload-status').textContent = `✅ ${data.uploaded.length} Datei(en) hochgeladen`;
+          document.getElementById('upload-bar').style.background = '#16a34a';
+          document.getElementById('upload-percent').textContent = '100%';
+          document.getElementById('upload-detail').textContent = data.uploaded.join(', ');
+        } else {
+          document.getElementById('upload-status').textContent = '❌ Fehler beim Upload';
+          document.getElementById('upload-bar').style.background = '#ef4444';
+        }
+      } catch {
+        document.getElementById('upload-status').textContent = '❌ Unbekannter Fehler';
+        document.getElementById('upload-bar').style.background = '#ef4444';
+      }
+
+      setTimeout(() => {
+        progressWrap.remove();
+        loadFiles(currentFilePath);
+      }, 2000);
+
+      input.value = '';
+      resolve();
+    });
+
+    // Fehler
+    xhr.addEventListener('error', () => {
+      document.getElementById('upload-status').textContent = '❌ Verbindungsfehler';
+      document.getElementById('upload-bar').style.background = '#ef4444';
+      setTimeout(() => progressWrap.remove(), 3000);
+      resolve();
+    });
+
+    xhr.open('POST', `/api/servers/${serverId}/files/upload`);
+    xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+    xhr.send(formData);
   });
-
-  const data = await res.json();
-  progress.textContent = data.success
-    ? `✓ ${data.uploaded.length} Datei(en) hochgeladen`
-    : '✗ Fehler beim Upload';
-
-  setTimeout(() => progress.remove(), 3000);
-  input.value = '';
-  loadFiles(currentFilePath);
 }
 
 // ─── BACKUPS ─────────────────────────────────────────
