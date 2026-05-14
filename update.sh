@@ -86,6 +86,13 @@ info "Prüfe Verzeichnisse..."
 mkdir -p servers backups tmp logs
 log "Verzeichnisse vorhanden"
 
+# ─── SETUP-CHECKS (Java, Dependencies, etc.) ───────
+if [ -f "$INSTALL_DIR/setup.js" ]; then
+  info "Führe Setup-Checks durch..."
+  node setup.js || warn "Setup-Checks fehlgeschlagen (ignoriert)"
+  log "Setup-Checks abgeschlossen"
+fi
+
 # ─── DATENBANK MIGRATION (Falls notwendig) ──────────
 if [ -f "$INSTALL_DIR/migrate.js" ]; then
   info "Führe Datenbankmigrationen durch..."

@@ -158,34 +158,52 @@ async function checkJava() {
     console.log('✅ Java gefunden:', versionOutput.split('\n')[0]);
 
     if (major < 21) {
-      console.log('⚠️ Gefundene Java-Version ist älter als 21. Minecraft 1.26.1.2 oder neuer benötigt mindestens Java 21, häufiger jedoch Java 25.');
+      console.log('⚠️ Gefundene Java-Version ist älter als 21. Installiere Java 25...');
       if (isLinux) {
-        console.log('📦 Installiere Java 21 als Mindestversion...');
-        execSync('sudo apt-get install -y openjdk-21-jre-headless', { stdio: 'inherit' });
-        console.log('✅ Java 21 installiert');
+        await installJavaLinux();
       } else {
-        console.log('❌ Bitte Java 21 oder neuer manuell installieren: https://adoptium.net');
+        console.log('❌ Bitte Java 25+ manuell installieren: https://adoptium.net');
       }
     } else if (major < 25) {
-      console.log(`⚠️ Java ${major} gefunden. Für Minecraft 1.26.1.2 kann Java 25 oder neuer erforderlich sein.`);
+      console.log(`⚠️ Java ${major} gefunden. Minecraft 1.26.1.2+ benötigt Java 25+. Versuche zu aktualisieren...`);
+      if (isLinux) {
+        await installJavaLinux();
+      }
     } else {
-      console.log(`✅ Java ${major} ist installiert.`);
+      console.log(`✅ Java ${major} ist installiert — perfekt für Minecraft 1.26.1.2+.`);
     }
   } catch (err) {
     console.log('⚠️ Java nicht gefunden oder Version konnte nicht gelesen werden.');
     if (isLinux) {
-      console.log('📦 Installiere Java 21...');
-      try {
-        execSync('sudo apt-get install -y openjdk-21-jre-headless', { stdio: 'inherit' });
-        console.log('✅ Java 21 installiert');
-      } catch (e) {
-        console.log('❌ Java-Installation fehlgeschlagen — bitte manuell installieren');
-        console.log('   sudo apt-get install openjdk-21-jre-headless');
-        console.log('   oder installieren Sie eine neuere Java-Version, z. B. Java 25, falls erforderlich.');
-      }
+      await installJavaLinux();
     } else {
-      console.log('❌ Bitte Java 21 oder neuer manuell installieren: https://adoptium.net');
+      console.log('❌ Bitte Java 25+ manuell installieren: https://adoptium.net');
     }
+  }
+}
+
+async function installJavaLinux() {
+  console.log('📦 Versuche Java 25 zu installieren...');
+  try {
+    execSync('sudo apt-get update', { stdio: 'inherit' });
+    execSync('sudo apt-get install -y openjdk-25-jre-headless 2>/dev/null || sudo apt-get install -y openjdk-21-jre-headless', { stdio: 'inherit' });
+    
+    const versionOutput = execSync('java -version 2>&1', { encoding: 'utf8' });
+    const versionMatch = versionOutput.match(/version "(\d+)/);
+    const major = versionMatch ? parseInt(versionMatch[1], 10) : null;
+    
+    if (major >= 25) {
+      console.log(`✅ Java ${major} erfolgreich installiert.`);
+    } else if (major >= 21) {
+      console.log(`✅ Java ${major} installiert (Fallback). Für Minecraft 1.26.1.2 wird möglicherweise Java 25+ benötigt.`);
+    } else {
+      console.log('⚠️ Java-Installation unklar. Bitte manuell überprüfen: java -version');
+    }
+  } catch (e) {
+    console.log('❌ Java-Installation fehlgeschlagen.');
+    console.log('   Versuchen Sie manuell:');
+    console.log('   sudo apt-get install -y openjdk-25-jre-headless');
+    console.log('   oder von https://adoptium.net herunterladen.');
   }
 }
 
