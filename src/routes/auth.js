@@ -26,6 +26,30 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ─── VALIDATION HELPERS ──────────────────────────────
+
+function isValidUsername(username) {
+  // Nur Buchstaben, Zahlen, Bindestriche und Unterstriche erlauben
+  // Keine Zahlen am Anfang
+  return /^[a-zA-Z_][a-zA-Z0-9_-]{2,31}$/.test(username);
+}
+
+function validatePasswordStrength(password) {
+  if (password.length < 8) {
+    return 'Passwort muss mindestens 8 Zeichen lang sein';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Passwort muss Kleinbuchstaben enthalten';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Passwort muss Großbuchstaben enthalten';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Passwort muss Zahlen enthalten';
+  }
+  return null;
+}
+
 // ─── ROUTEN ──────────────────────────────────────────
 
 router.post('/login', (req, res) => {
@@ -75,8 +99,18 @@ router.post('/setup', requireAuth, (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ error: 'Username und Passwort erforderlich' });
   }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Passwort muss mindestens 8 Zeichen lang sein' });
+
+  // Username Validierung
+  if (!isValidUsername(username)) {
+    return res.status(400).json({ 
+      error: 'Ungültiger Benutzername. Nur Buchstaben, Zahlen, Bindestrich und Unterstrich erlaubt. Muss mit Buchstabe oder Unterstrich beginnen (3-32 Zeichen).' 
+    });
+  }
+
+  // Passwort Validierung
+  const pwError = validatePasswordStrength(password);
+  if (pwError) {
+    return res.status(400).json({ error: pwError });
   }
 
   const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
@@ -92,7 +126,7 @@ router.post('/setup', requireAuth, (req, res) => {
 
   // DANN temp Admin löschen
   db.prepare('DELETE FROM users WHERE is_temp = 1').run();
-  console.log('Temporärer Admin gelöscht, echter Admin erstellt');
+  console.log('✅ Temporärer Admin gelöscht, echter Admin erstellt:', username);
 
   res.json({ success: true });
 });
@@ -104,31 +138,46 @@ router.post('/register', requireAuth, requireAdmin, (req, res) => {
     return res.status(400).json({ error: 'Username erforderlich' });
   }
 
+  // Username Validierung
+  if (!isValidUsername(username)) {
+    return res.status(400).json({ 
+      error: 'Ungültiger Benutzername. Nur Buchstaben, Zahlen, Bindestrich und Unterstrich erlaubt. Muss mit Buchstabe oder Unterstrich beginnen (3-32 Zeichen).' 
+    });
+  }
+
   const existing = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (existing) return res.status(400).json({ error: 'Username bereits vergeben' });
 
+  // Generiere sichere OTP
   const otp = require('crypto').randomBytes(4).toString('hex').toUpperCase();
-  const otpExpires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const otpExpires = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24h standard
   const hashed = bcrypt.hashSync(otp, 10);
 
-  // ERST User erstellen
-  const result = db.prepare(`
-    INSERT INTO users (username, password, email, role, is_temp, otp_code, otp_expires_at)
-    VALUES (?, ?, ?, ?, 0, ?, ?)
-  `).run(username, hashed, email || null, role || 'user', otp, otpExpires);
+  try {
+    // ERST User erstellen
+    const result = db.prepare(`
+      INSERT INTO users (username, password, email, role, is_temp, otp_code, otp_expires_at)
+      VALUES (?, ?, ?, ?, 0, ?, ?)
+    `).run(username, hashed, email || null, role || 'user', otp, otpExpires);
 
-  // DANN temporären Admin löschen
-  if (req.user.is_temp) {
-    db.prepare('DELETE FROM users WHERE is_temp = 1').run();
-    console.log('Temporärer Admin gelöscht');
+    // DANN temporären Admin löschen falls vorhanden
+    if (req.user.is_temp) {
+      db.prepare('DELETE FROM users WHERE is_temp = 1').run();
+      console.log('✅ Temporärer Admin gelöscht');
+    }
+
+    console.log(`✅ Neuer Benutzer erstellt: ${username}`);
+
+    res.json({
+      success: true,
+      id: result.lastInsertRowid,
+      otp,
+      message: `Benutzer erstellt. Temporäres Passwort: ${otp}`
+    });
+  } catch (err) {
+    console.error('❌ Fehler beim Erstellen des Benutzers:', err.message);
+    res.status(400).json({ error: 'Fehler beim Erstellen des Benutzers: ' + err.message });
   }
-
-  res.json({
-    success: true,
-    id: result.lastInsertRowid,
-    otp,
-    message: `Benutzer erstellt. Temporäres Passwort: ${otp}`
-  });
 });
 
 router.post('/change-password', requireAuth, (req, res) => {
@@ -140,8 +189,11 @@ router.post('/change-password', requireAuth, (req, res) => {
   if (password !== password2) {
     return res.status(400).json({ error: 'Passwörter stimmen nicht überein' });
   }
-  if (password.length < 8) {
-    return res.status(400).json({ error: 'Passwort muss mindestens 8 Zeichen lang sein' });
+
+  // Passwort Validierung
+  const pwError = validatePasswordStrength(password);
+  if (pwError) {
+    return res.status(400).json({ error: pwError });
   }
 
   const hashed = bcrypt.hashSync(password, 10);
@@ -154,6 +206,8 @@ router.post('/change-password', requireAuth, (req, res) => {
     SECRET,
     { expiresIn: '24h' }
   );
+
+  console.log(`✅ Passwort aktualisiert für Benutzer: ${user.username}`);
 
   res.json({
     success: true,
@@ -178,18 +232,55 @@ router.get('/users', requireAuth, requireAdmin, (req, res) => {
 });
 
 router.delete('/users/:id', requireAuth, requireAdmin, (req, res) => {
-  db.prepare('DELETE FROM users WHERE id = ?').run(req.params.id);
-  res.json({ success: true });
+  const userId = parseInt(req.params.id, 10);
+  
+  if (!userId) {
+    return res.status(400).json({ error: 'Ungültige Benutzer-ID' });
+  }
+
+  // Nicht sich selbst löschen
+  if (userId === req.user.id) {
+    return res.status(400).json({ error: 'Du kannst deinen eigenen Account nicht löschen' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+  if (!user) {
+    return res.status(404).json({ error: 'Benutzer nicht gefunden' });
+  }
+
+  try {
+    // Erst Permissions löschen, dann User
+    db.prepare('DELETE FROM user_server_permissions WHERE user_id = ?').run(userId);
+    db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+    
+    console.log(`✅ Benutzer gelöscht: ${user.username}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('❌ Fehler beim Löschen des Benutzers:', err.message);
+    res.status(400).json({ error: 'Fehler beim Löschen: ' + err.message });
+  }
 });
 
 // OTP Gültigkeit ändern
 router.post('/extend-otp', requireAuth, requireAdmin, (req, res) => {
   const { username, hours } = req.body;
+  
+  if (!username || !hours) {
+    return res.status(400).json({ error: 'Username und Stundenanzahl erforderlich' });
+  }
+
+  const hours_num = parseInt(hours, 10);
+  if (isNaN(hours_num) || hours_num < 1 || hours_num > 720) {
+    return res.status(400).json({ error: 'Stunden müssen zwischen 1 und 720 liegen' });
+  }
+
   const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
 
-  const newExpiry = new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
+  const newExpiry = new Date(Date.now() + hours_num * 60 * 60 * 1000).toISOString();
   db.prepare('UPDATE users SET otp_expires_at = ? WHERE username = ?').run(newExpiry, username);
+  
+  console.log(`✅ OTP-Gültigkeit erweitert für ${username} um ${hours_num} Stunden`);
   res.json({ success: true });
 });
 
