@@ -155,10 +155,12 @@ async function startServer(serverId, io) {
         command = 'cmd';
         args = ['/c', cleanLine];
       } else {
-        fs.chmodSync(runScript, '755');
-        command = 'bash';
-        args = [runScript];
-      }
+     fs.chmodSync(runScript, '755');
+      command = 'bash';
+        // Statt des langen, fehleranfälligen absoluten Pfads nutzen wir direkt den lokalen Aufruf, 
+        // da 'cwd' den Prozess sowieso schon in den richtigen Ordner schiebt.
+        args = ['./run.sh']; 
+    }
     } else {
       const jarFile = path.join(serverPath, 'server.jar');
       if (!fs.existsSync(jarFile)) {
